@@ -2,7 +2,7 @@
 
 ##  Backend Stack Implemented
 
-Your Smart Pet Feeder now has a complete **Supabase** backend with:
+My Smart Pet Feeder now has a complete **Supabase** backend with:
 
 - **PostgreSQL Database** with 7 tables and analytics views
 -  **Authentication** with JWT tokens and session management
@@ -310,15 +310,7 @@ The ESP32 will need to:
    Body: { "status": "ONLINE", "last_seen_at": "2025-12-03T19:00:00Z" }
    ```
 
-## 🎓 For Your FYP Defense
 
-Key points to emphasize:
-
-1. **Offline-First Architecture**: Commands are queued and executed when device reconnects
-2. **Real-time Updates**: WebSocket-based live status without polling
-3. **Security**: Row-level security ensures data isolation
-4. **Scalability**: PostgreSQL + Supabase can handle production load
-5. **Analytics**: Built-in views for feeding statistics and trends
 
 ## 📚 Resources
 
