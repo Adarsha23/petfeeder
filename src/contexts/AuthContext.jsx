@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { login as mockLogin, signup as mockSignup, logout as mockLogout, getCurrentSession } from '../utils/mockAuth';
+import { signIn, signUp, signOut, getCurrentUser, onAuthStateChange } from '../services/authService';
 
 const AuthContext = createContext(null);
 
@@ -16,22 +16,51 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Check for existing session on mount
+    // Initialize auth state and listen for changes
     useEffect(() => {
-        const session = getCurrentSession();
-        if (session) {
-            setUser(session.user);
-        }
-        setLoading(false);
+        // Check for existing session
+        const initializeAuth = async () => {
+            try {
+                const { user: currentUser } = await getCurrentUser();
+                setUser(currentUser);
+            } catch (err) {
+                console.error('Error initializing auth:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initializeAuth();
+
+        // Listen for auth state changes
+        const { data: { subscription } } = onAuthStateChange((event, session) => {
+            console.log('Auth state changed:', event);
+            setUser(session?.user ?? null);
+            setLoading(false);
+        });
+
+        // Cleanup subscription on unmount
+        return () => {
+            subscription?.unsubscribe();
+        };
     }, []);
 
     const login = async (credentials) => {
         try {
             setError(null);
             setLoading(true);
-            const session = await mockLogin(credentials);
-            setUser(session.user);
-            return session.user;
+
+            const { data, error: signInError } = await signIn(
+                credentials.email,
+                credentials.password
+            );
+
+            if (signInError) {
+                throw new Error(signInError);
+            }
+
+            setUser(data.user);
+            return data.user;
         } catch (err) {
             setError(err.message);
             throw err;
@@ -44,9 +73,22 @@ export const AuthProvider = ({ children }) => {
         try {
             setError(null);
             setLoading(true);
-            const session = await mockSignup(userData);
-            setUser(session.user);
-            return session.user;
+
+            const { data, error: signUpError } = await signUp(
+                userData.email,
+                userData.password,
+                userData.name
+            );
+
+            if (signUpError) {
+                throw new Error(signUpError);
+            }
+
+            // DON'T set user here - they need to verify email first
+            // setUser(data.user);
+
+            // Return the data but don't log them in
+            return data;
         } catch (err) {
             setError(err.message);
             throw err;
@@ -58,7 +100,12 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         try {
             setError(null);
-            await mockLogout();
+            const { error: signOutError } = await signOut();
+
+            if (signOutError) {
+                throw new Error(signOutError);
+            }
+
             setUser(null);
         } catch (err) {
             setError(err.message);
@@ -73,8 +120,10 @@ export const AuthProvider = ({ children }) => {
         login,
         signup,
         logout,
-        isAuthenticated: !!user
+        isAuthenticated: !!user && user.email_confirmed_at !== null,
+        isEmailVerified: user?.email_confirmed_at !== null
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
