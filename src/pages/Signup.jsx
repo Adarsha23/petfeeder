@@ -92,7 +92,8 @@ const Signup = () => {
                 email: formData.email,
                 password: formData.password
             });
-            navigate('/dashboard');
+            // Redirect to verify email page with email in state
+            navigate('/verify-email', { state: { email: formData.email } });
         } catch (err) {
             setServerError(err.message || 'Signup failed. Please try again.');
         } finally {
@@ -176,8 +177,8 @@ const Signup = () => {
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="text-xs text-gray-600">Password strength:</span>
                                         <span className={`text-xs font-medium ${passwordStrength.strength >= 4 ? 'text-green-600' :
-                                                passwordStrength.strength >= 3 ? 'text-yellow-600' :
-                                                    'text-red-600'
+                                            passwordStrength.strength >= 3 ? 'text-yellow-600' :
+                                                'text-red-600'
                                             }`}>
                                             {passwordStrength.label}
                                         </span>
@@ -187,8 +188,8 @@ const Signup = () => {
                                             <div
                                                 key={level}
                                                 className={`h-1 flex-1 rounded-full ${level <= passwordStrength.strength
-                                                        ? passwordStrength.color
-                                                        : 'bg-gray-200'
+                                                    ? passwordStrength.color
+                                                    : 'bg-gray-200'
                                                     }`}
                                             />
                                         ))}

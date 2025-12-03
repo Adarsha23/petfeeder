@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
-    const { isAuthenticated, loading } = useAuth();
+    const { user, isAuthenticated, isEmailVerified, loading } = useAuth();
 
     if (loading) {
         return (
@@ -12,10 +12,17 @@ const ProtectedRoute = ({ children }) => {
         );
     }
 
-    if (!isAuthenticated) {
+    // If no user at all, redirect to login
+    if (!user) {
         return <Navigate to="/login" replace />;
     }
 
+    // If user exists but email not verified, redirect to verify-email
+    if (!isEmailVerified) {
+        return <Navigate to="/verify-email" replace />;
+    }
+
+    // If user exists and email is verified, allow access
     return children;
 };
 
