@@ -15,6 +15,7 @@ export const signUp = async (email, password, fullName) => {
                 data: {
                     full_name: fullName,
                 },
+                emailRedirectTo: `${window.location.origin}/login?verified=true`,
             },
         });
 

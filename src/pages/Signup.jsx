@@ -87,14 +87,19 @@ const Signup = () => {
 
         setLoading(true);
         try {
-            await signup({
+            console.log('Starting signup process...');
+            const result = await signup({
                 name: formData.name.trim(),
                 email: formData.email,
                 password: formData.password
             });
+            console.log('Signup result:', result);
+
             // Redirect to verify email page with email in state
+            console.log('Redirecting to verify-email page...');
             navigate('/verify-email', { state: { email: formData.email } });
         } catch (err) {
+            console.error('Signup error:', err);
             setServerError(err.message || 'Signup failed. Please try again.');
         } finally {
             setLoading(false);

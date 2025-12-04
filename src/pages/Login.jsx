@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Mail, Lock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Input from '../components/Input';
 import Button from '../components/Button';
@@ -8,6 +8,7 @@ import Button from '../components/Button';
 const Login = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
+    const [searchParams] = useSearchParams();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -16,6 +17,16 @@ const Login = () => {
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [serverError, setServerError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+
+    // Check if user came from email verification
+    useEffect(() => {
+        if (searchParams.get('verified') === 'true') {
+            setSuccessMessage('Email verified successfully! Please log in to continue.');
+            // Clear the URL parameter
+            window.history.replaceState({}, '', '/login');
+        }
+    }, [searchParams]);
 
     const validateForm = () => {
         const newErrors = {};
@@ -81,6 +92,13 @@ const Login = () => {
                 {/* Login Card */}
                 <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
                     <h2 className="text-2xl font-bold text-gray-900 mb-6">Login</h2>
+
+                    {successMessage && (
+                        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+                            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                            <p className="text-sm text-green-800">{successMessage}</p>
+                        </div>
+                    )}
 
                     {serverError && (
                         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">

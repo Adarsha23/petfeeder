@@ -8,26 +8,26 @@ import Button from '../components/Button';
 const VerifyEmail = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { isEmailVerified, logout } = useAuth();
+    const { user, isEmailVerified } = useAuth();
     const [email, setEmail] = useState(location.state?.email || '');
     const [resendLoading, setResendLoading] = useState(false);
     const [resendSuccess, setResendSuccess] = useState(false);
     const [countdown, setCountdown] = useState(60);
     const [canResend, setCanResend] = useState(false);
 
-    // Redirect if already verified
+    console.log('VerifyEmail component mounted');
+    console.log('User:', user);
+    console.log('Email from state:', location.state?.email);
+    console.log('isEmailVerified:', isEmailVerified);
+
+    // Redirect if user is logged in AND verified
     useEffect(() => {
-        if (isEmailVerified) {
+        console.log('Checking if email verified:', isEmailVerified, 'User exists:', !!user);
+        if (user && isEmailVerified) {
+            console.log('User is logged in and verified, redirecting to dashboard');
             navigate('/dashboard');
         }
-    }, [isEmailVerified, navigate]);
-
-    // Redirect to signup if no email provided
-    useEffect(() => {
-        if (!email) {
-            navigate('/signup');
-        }
-    }, [email, navigate]);
+    }, [user, isEmailVerified, navigate]);
 
     // Countdown timer for resend button
     useEffect(() => {
@@ -95,27 +95,35 @@ const VerifyEmail = () => {
 
                     {/* Title */}
                     <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">
-                        Verify Your Email
+                        Check Your Email
                     </h2>
 
                     {/* Description */}
-                    <p className="text-gray-600 text-center mb-6">
+                    <p className="text-gray-600 text-center mb-2">
                         We've sent a verification link to
                     </p>
                     <p className="text-blue-600 font-medium text-center mb-6">
-                        {email}
+                        {email || 'your email address'}
                     </p>
 
+                    {/* Main Instruction */}
+                    <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-6">
+                        <p className="text-blue-900 font-semibold text-center text-base">
+                            Please click the link in your email to login and verify your account
+                        </p>
+                    </div>
+
                     {/* Instructions */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
                         <div className="flex items-start gap-3">
-                            <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm text-blue-900">
-                                <p className="font-medium mb-2">Next steps:</p>
-                                <ol className="list-decimal list-inside space-y-1 text-blue-800">
-                                    <li>Check your email inbox</li>
-                                    <li>Click the verification link</li>
-                                    <li>You'll be automatically redirected to login</li>
+                            <CheckCircle2 className="h-5 w-5 text-gray-600 flex-shrink-0 mt-0.5" />
+                            <div className="text-sm text-gray-700">
+                                <p className="font-medium mb-2">What happens next:</p>
+                                <ol className="list-decimal list-inside space-y-1">
+                                    <li>Open your email inbox</li>
+                                    <li>Click the verification link in the email</li>
+                                    <li>You'll be redirected to the login page</li>
+                                    <li>Enter your email and password to login</li>
                                 </ol>
                             </div>
                         </div>
