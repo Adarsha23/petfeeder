@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, Wifi, QrCode } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { registerFeeder } from '../utils/feederService';
+import { registerDevice } from '../services/deviceService';
 import Input from './Input';
 import Button from './Button';
 
@@ -26,11 +26,13 @@ const AddFeederModal = ({ isOpen, onClose }) => {
 
         setLoading(true);
         try {
-            await registerFeeder(user.id, {
-                serialNumber: formData.serialNumber.trim(),
-                pairingCode: formData.pairingCode.trim(),
-                name: formData.name.trim()
-            });
+            const { data, error } = await registerDevice(
+                formData.serialNumber.trim(),
+                formData.pairingCode.trim(),
+                formData.name.trim() || null
+            );
+
+            if (error) throw new Error(error);
 
             // Reset form
             setFormData({ serialNumber: '', pairingCode: '', name: '' });

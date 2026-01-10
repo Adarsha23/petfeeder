@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, PawPrint, Settings, Bell, Plus, Wifi } from 'lucide-react';
-import { getPetProfile } from '../utils/petProfileService';
-import { getUserFeeders } from '../utils/feederService';
+import { getPetProfiles } from '../services/petProfileService';
+import { getUserDevices } from '../services/deviceService';
 import Button from '../components/Button';
 import PetProfileModal from '../components/PetProfileModal';
 import PetProfileCard from '../components/PetProfileCard';
@@ -35,8 +35,10 @@ const Dashboard = () => {
     const loadPetProfile = async () => {
         setLoadingProfile(true);
         try {
-            const profile = await getPetProfile(user.id);
-            setPetProfile(profile);
+            const { data, error } = await getPetProfiles();
+            if (error) throw new Error(error);
+            // Get first profile (assuming one pet per user for now)
+            setPetProfile(data && data.length > 0 ? data[0] : null);
         } catch (err) {
             console.error('Failed to load pet profile:', err);
         } finally {
@@ -47,8 +49,9 @@ const Dashboard = () => {
     const loadFeeders = async () => {
         setLoadingFeeders(true);
         try {
-            const userFeeders = await getUserFeeders(user.id);
-            setFeeders(userFeeders);
+            const { data, error } = await getUserDevices();
+            if (error) throw new Error(error);
+            setFeeders(data || []);
         } catch (err) {
             console.error('Failed to load feeders:', err);
         } finally {

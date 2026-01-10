@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { createPetProfile, updatePetProfile } from '../utils/petProfileService';
+import { createPetProfile, updatePetProfile } from '../services/petProfileService';
 import Input from './Input';
 import Button from './Button';
 import ImageUpload from './ImageUpload';
@@ -107,7 +107,7 @@ const PetProfileModal = ({ isOpen, onClose, existingProfile = null }) => {
             if (existingProfile) {
                 await updatePetProfile(existingProfile.id, petData);
             } else {
-                await createPetProfile(user.id, petData);
+                await createPetProfile(petData);
             }
 
             onClose(true); // Pass true to indicate success
