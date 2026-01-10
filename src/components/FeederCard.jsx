@@ -8,8 +8,8 @@ const FeederCard = ({ feeder, onManage }) => {
         <div className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200 group">
             <div className="flex items-start justify-between mb-4">
                 <div>
-                    <h4 className="font-bold text-gray-900 text-lg">{feeder.name}</h4>
-                    <p className="text-sm text-gray-500">{feeder.model}</p>
+                    <h4 className="font-bold text-gray-900 text-lg">{feeder.device_name || 'Unnamed Feeder'}</h4>
+                    <p className="text-sm text-gray-500">{feeder.serial_number}</p>
                 </div>
                 <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${isOnline ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
                     }`}>

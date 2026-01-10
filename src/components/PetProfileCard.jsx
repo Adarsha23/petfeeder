@@ -16,7 +16,7 @@ const PetProfileCard = ({ petProfile, onEdit }) => {
                 {/* Pet Photo */}
                 <div className="flex items-end justify-between mb-4">
                     <img
-                        src={petProfile.photo || getDefaultAvatar(petProfile.species)}
+                        src={petProfile.photo_url || petProfile.photo || getDefaultAvatar(petProfile.species || petProfile.name)}
                         alt={petProfile.name}
                         className="w-24 h-24 rounded-full border-4 border-white shadow-lg object-cover"
                     />
