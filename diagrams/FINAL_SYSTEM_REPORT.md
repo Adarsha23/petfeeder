@@ -14,78 +14,129 @@ This report provides a comprehensive design and architectural overviews of the "
 ## 2. Requirements & Functional Specification
 
 ### 2.1 Functional Decomposition Diagram (FDD)
-The following diagram illustrates the hierarchical breakdown of the system functions, providing three levels of depth for clear architectural partitioning.
+The following diagram illustrates the hierarchical breakdown of the system functions, providing deep granularity for clear architectural partitioning.
 
 ```mermaid
 graph TD
     System["Smart Pet Feeder System"]
 
-    %% Subsystem 1: User & Pet Management
+    %% SUBSYSTEM 1
     S1["Subsystem 1: User & Pet Management"]
     System --- S1
-    
-    S1 --- S1_F1["Feature 1: User Authentication"]
-    S1_F1 --- S1_F1_1["Account Lifecycle (Reg/Verify)"]
-    S1_F1 --- S1_F1_2["Session Layer (JWT/Auth)"]
-    S1_F1 --- S1_F1_3["Security (PW Reset/MFA)"]
-    
-    S1 --- S1_F2["Feature 2: Profile & Identity"]
-    S1_F2 --- S1_F2_1["User Personalization"]
-    S1_F2 --- S1_F2_2["Credential Management"]
-    
-    S1 --- S1_F3["Feature 3: Pet Management"]
-    S1_F3 --- S1_F3_1["Biological Registry (Stats)"]
-    S1_F3 --- S1_F3_2["Health Tracking (Weight)"]
-    S1_F3 --- S1_F3_3["Photo Artifact Storage"]
 
-    %% Subsystem 2: Feeding & Monitoring logic
-    S2["Subsystem 2: Feeding & Analytics"]
+    S1_F1["[S1.F1] User Authentication & Security"]
+    S1 --- S1_F1
+    S1_F1 --- FR1.1["FR1.1: Registration (Email/PW)"]
+    S1_F1 --- FR1.2["FR1.2: Email Verification"]
+    S1_F1 --- FR1.3["FR1.3: Mandatory Verification Guard"]
+    S1_F1 --- FR1.4["FR1.4: Verified Login Access"]
+    S1_F1 --- FR1.5["FR1.5: Password Reset Workflow"]
+    S1_F1 --- FR1.6["FR1.6: Profile Metadata Management"]
+    S1_F1 --- FR1.7["FR1.7: Secure Logout/Invalidation"]
+
+    S1_F2["[S1.F2] Pet Profile Management"]
+    S1 --- S1_F2
+    S1_F2 --- FR2.1["FR2.1: Multi-Pet Creation"]
+    S1_F2 --- FR2.2["FR2.2: Bio-data Storage"]
+    S1_F2 --- FR2.3["FR2.3: Cloud Photography"]
+    S1_F2 --- FR2.4["FR2.4: Attribute Editing"]
+    S1_F2 --- FR2.5["FR2.5: Secure Deletion"]
+    S1_F2 --- FR2.6["FR2.6: Detail Dashboard Interface"]
+
+    %% SUBSYSTEM 2
+    S2["Subsystem 2: Feeding, Monitoring & Analytics"]
     System --- S2
-    
-    S2 --- S2_F4["Feature 4: Feeding Protocols"]
-    S2_F4 --- S2_F4_1["Manual Precision Dispatch"]
-    S2_F4 --- S2_F4_2["Scheduler (Cron Recurring)"]
-    S2_F4 --- S2_F4_3["Buffer (Offline Queue)"]
-    
-    S2 --- S2_F5["Feature 5: Monitoring Engine"]
-    S2_F5 --- S2_F5_1["Real-time Scale Telemetry"]
-    S2_F5 --- S2_F5_2["Resource Level Sensing (F/W)"]
-    
-    S2 --- S2_F6["Feature 6: Analytics & Reports"]
-    S2_F6 --- S2_F6_1["Consumption Pattern Analysis"]
-    S2_F6 --- S2_F6_2["Statistical Visualization"]
-    S2_F6 --- S2_F6_3["Data Export Modules"]
 
-    %% Subsystem 3: IoT Connectivity & Alerts
-    S3["Subsystem 3: IoT & Communication"]
+    S2_F4["[S2.F4] Feeding Operations & Scheduler"]
+    S2 --- S2_F4
+    S2_F4 --- FR4.1["FR4.1: Manual Dispense Trigger"]
+    S2_F4 --- FR4.2["FR4.2: Gram Logic (0-500g)"]
+    S2_F4 --- FR4.3["FR4.3: Recurring Cron Cycles"]
+    S2_F4 --- FR4.4["FR4.4: Schedule Management"]
+    S2_F4 --- FR4.6["FR4.6: Offline Command Queue"]
+    S2_F4 --- FR4.8["FR4.8: Dispense Monitoring UI"]
+    S2_F4 --- FR4.9["FR4.9: Target vs Actual Audit"]
+
+    S2_F5["[S2.F5] Closed-Loop Control System (Core)"]
+    S2 --- S2_F5
+    S2_F5 --- FR5.1["FR5.1: Real-time Weight Feedback"]
+    S2_F5 --- FR5.2["FR5.2: Precision Motor Cutoff"]
+    S2_F5 --- FR5.4["FR5.4: ±5% Tolerance Validation"]
+    S2_F5 --- FR5.5["FR5.5: Deviation Alarm (>10%)"]
+    S2_F5 --- FR5.7["FR5.7: Database Gram Reporting"]
+
+    S2_F6["[S2.F6] Monitoring & Data Analytics"]
+    S2 --- S2_F6
+    S2_F6 --- FR6.1["FR6.1: Live Food Level Analysis"]
+    S2_F6 --- FR6.2["FR6.2: Live Water Level Analysis"]
+    S2_F6 --- FR6.3["FR6.3: Daily Summary Engine"]
+    S2_F6 --- FR6.5["FR6.5: KPI Dashboards (Success/Avg)"]
+    S2_F6 --- FR6.6["FR6.6: Universal Data Export"]
+    S2_F6 --- FR6.7["FR6.7: Anomaly Visualization Engine"]
+    S2_F6 --- FR6.8["FR6.8: Smart Stock Alerts"]
+
+    %% SUBSYSTEM 3
+    S3["Subsystem 3: IoT, Connectivity & Notifications"]
     System --- S3
+
+    S3_F3["[S3.F3] Device Management & Pairing"]
+    S3 --- S3_F3
+    S3_F3 --- FR3.1["FR3.1: Secure SN/Code Pairing"]
+    S3_F3 --- FR3.4["FR3.4: Connectivity Heartbeat"]
+    S3_F3 --- FR3.6["FR3.6: Multi-tenant Device Sharing"]
+    S3_F3 --- FR3.8["FR3.8: Remote Load-Cell Calibration"]
+    S3_F3 --- FR3.10["FR3.10: Version Lifecycle Logging"]
+
+    S3_F7["[S3.F7] Multi-Channel Notifications"]
+    S3 --- S3_F7
+    S3_F7 --- FR7.1["FR7.1: Dispense Success Alerts"]
+    S3_F7 --- FR7.2["FR7.2: Hardware Failure Warnings"]
+    S3_F7 --- FR7.3["FR7.3: Critical Low-Stock Notifs"]
+    S3_F7 --- FR7.5["FR7.5: Offline/Online State Push"]
+    S3_F7 --- FR7.8["FR7.8: User Preference Profiles"]
+
+    S3_F8["[S3.F8] IoT Polling & Real-time Ops"]
+    S3 --- S3_F8
+    S3_F8 --- FR8.1["FR8.1: Adaptive Polling (10-30s)"]
+    S3_F8 --- FR8.4["FR8.4: Quad-Sensor Telemetry"]
+    S3_F8 --- FR8.8["FR8.8: PENDING-to-EXECUTED Flow"]
+
+    %% SYSTEM-WIDE NODES
+    SQ["System Quality & Constraints"]
+    System --- SQ
+    SQ --- NFR["Non-Functional Requirements"]
+    NFR --- NFR1.1["NFR1.1: 2s Latency Baseline"]
+    NFR --- NFR2.1["NFR2.1: 99.9% Availability"]
+    NFR --- NFR3.2["NFR3.2: TLS 1.3 Encryption"]
+    NFR --- NFR3.3["NFR3.3: Row-Level Security"]
+    NFR --- NFR4.5["NFR4.5: Mobile-First UX Parity"]
     
-    S3 --- S3_F7["Feature 7: Device Lifecycle"]
-    S3_F7 --- S3_F7_1["Secure Pairing (S/N + Code)"]
-    S3_F7 --- S3_F7_2["Firmware Registry & Tracking"]
-    
-    S3 --- S3_F8["Feature 8: Hardware Loop (Closed-Loop)"]
-    S3_F8 --- S3_F8_1["PWM Servo Actuation"]
-    S3_F8 --- S3_F8_2["Feedback (HX711 Scaling)"]
-    S3_F8 --- S3_F8_3["Anomaly Logic (Stall Detect)"]
-    
-    S3 --- S3_F9["Feature 9: Notification Mesh"]
-    S3_F9 --- S3_F9_1["Operational Alerts"]
-    S3_F9 --- S3_F9_2["Critical Supply Alerts"]
-    S3_F9 --- S3_F9_3["Device Status Notifications"]
+    SQ --- CS["System Constraints"]
+    CS --- C1.1["C1.1: React-Supabase Stack"]
+    CS --- C1.3["C1.3: ESP32-Servo-PWM Hard"]
+    CS --- DBR["Database Architecture"]
+    DBR --- DBR1.1["DBR1.1: Multi-tenant Schema"]
+    DBR --- DBR2.1["DBR2.1: Logic Triggers"]
 
     %% Styling
-    classDef system fill:#2c3e50,color:#fff,stroke-width:4px;
-    classDef subsys fill:#ecf0f1,stroke:#2c3e50,stroke-width:3px;
-    classDef feature fill:#fff,stroke:#34495e,stroke-width:2px;
-    classDef leaf fill:#fff,stroke:#7f8c8d,stroke-dasharray: 5 5;
+    classDef system fill:#000,color:#fff,stroke-width:4px;
+    classDef subsys fill:#f2f2f2,stroke:#000,stroke-width:3px;
+    classDef feature fill:#fff,stroke:#333,stroke-width:2px;
+    classDef leaf fill:#fff,stroke:#999,stroke-dasharray: 5 5;
     
     class System system;
-    class S1,S2,S3 subsys;
-    class S1_F1,S1_F2,S1_F3,S2_F4,S2_F5,S2_F6,S3_F7,S3_F8,S3_F9 feature;
-    class S1_F1_1,S1_F1_2,S1_F1_3,S1_F2_1,S1_F2_2,S1_F3_1,S1_F3_2,S1_F3_3 leaf;
-    class S2_F4_1,S2_F4_2,S2_F4_3,S2_F5_1,S2_F5_2,S2_F6_1,S2_F6_2,S2_F6_3 leaf;
-    class S3_F7_1,S3_F7_2,S3_F8_1,S3_F8_2,S3_F8_3,S3_F9_1,S3_F9_2,S3_F9_3 leaf;
+    class S1,S2,S3,SQ subsys;
+    class S1_F1,S1_F2,S2_F4,S2_F5,S2_F6,S3_F3,S3_F7,S3_F8,NFR,CS,DBR feature;
+    class FR1.1,FR1.2,FR1.3,FR1.4,FR1.5,FR1.6,FR1.7 leaf;
+    class FR2.1,FR2.2,FR2.3,FR2.4,FR2.5,FR2.6 leaf;
+    class FR4.1,FR4.2,FR4.3,FR4.4,FR4.6,FR4.8,FR4.9 leaf;
+    class FR5.1,FR5.2,FR5.4,FR5.5,FR5.7 leaf;
+    class FR6.1,FR6.2,FR6.3,FR6.5,FR6.6,FR6.7,FR6.8 leaf;
+    class FR3.1,FR3.4,FR3.6,FR3.8,FR3.10 leaf;
+    class FR7.1,FR7.2,FR7.3,FR7.5,FR7.8 leaf;
+    class FR8.1,FR8.4,FR8.8 leaf;
+    class NFR1.1,NFR2.1,NFR3.2,NFR3.3,NFR4.5 leaf;
+    class C1.1,C1.3,DBR1.1,DBR2.1 leaf;
 ```
 
 ### 2.2 Software Requirements Specification (SRS) Tracking
