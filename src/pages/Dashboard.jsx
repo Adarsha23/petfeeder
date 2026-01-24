@@ -4,11 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut, PawPrint, Settings, Bell, Plus, Wifi } from 'lucide-react';
 import { getPetProfiles } from '../services/petProfileService';
 import { getUserDevices } from '../services/deviceService';
+import { queueFeedCommand } from '../services/commandService';
 import Button from '../components/Button';
 import PetProfileModal from '../components/PetProfileModal';
 import PetProfileCard from '../components/PetProfileCard';
 import AddFeederModal from '../components/AddFeederModal';
 import FeederCard from '../components/FeederCard';
+import FeedNowModal from '../components/FeedNowModal';
+import FeedingHistory from '../components/FeedingHistory';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
@@ -24,6 +27,10 @@ const Dashboard = () => {
     const [loadingFeeders, setLoadingFeeders] = useState(true);
     const [showFeederModal, setShowFeederModal] = useState(false);
 
+    // Feed Now State
+    const [showFeedModal, setShowFeedModal] = useState(false);
+    const [selectedFeeder, setSelectedFeeder] = useState(null);
+
     // Load data on mount
     useEffect(() => {
         if (user) {
@@ -31,6 +38,11 @@ const Dashboard = () => {
             loadFeeders();
         }
     }, [user]);
+
+    const refreshDashboard = () => {
+        loadPetProfile();
+        loadFeeders();
+    };
 
     const loadPetProfile = async () => {
         setLoadingProfile(true);
@@ -72,6 +84,20 @@ const Dashboard = () => {
     const handleFeederModalClose = (success) => {
         setShowFeederModal(false);
         if (success) loadFeeders();
+    };
+
+    const handleFeedNow = (feeder) => {
+        setSelectedFeeder(feeder);
+        setShowFeedModal(true);
+    };
+
+    const handleFeed = async (feederId, portionSize) => {
+        const { data, error } = await queueFeedCommand(feederId, portionSize, petProfile?.id);
+        if (error) throw new Error(error);
+
+        // Refresh data to show pending status
+        setTimeout(loadFeeders, 500);
+        return data;
     };
 
     return (
@@ -190,6 +216,7 @@ const Dashboard = () => {
                                     key={feeder.id}
                                     feeder={feeder}
                                     onManage={(f) => console.log('Manage', f)}
+                                    onFeedNow={handleFeedNow}
                                 />
                             ))}
                         </div>
@@ -215,6 +242,12 @@ const Dashboard = () => {
                     )}
                 </div>
 
+                {/* Recent Activity Section */}
+                <div className="mb-8">
+                    <h3 className="text-xl font-bold text-gray-900 mb-6">Recent Activity</h3>
+                    <FeedingHistory feeders={feeders} />
+                </div>
+
                 {/* Info Card */}
                 <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
                     <h4 className="font-semibold text-blue-900 mb-2">Multi-User Control</h4>
@@ -235,6 +268,13 @@ const Dashboard = () => {
             <AddFeederModal
                 isOpen={showFeederModal}
                 onClose={handleFeederModalClose}
+            />
+
+            <FeedNowModal
+                isOpen={showFeedModal}
+                onClose={() => setShowFeedModal(false)}
+                feeder={selectedFeeder}
+                onFeed={handleFeed}
             />
         </div>
     );
