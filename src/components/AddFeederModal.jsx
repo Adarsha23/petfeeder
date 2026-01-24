@@ -5,12 +5,13 @@ import { registerDevice } from '../services/deviceService';
 import Input from './Input';
 import Button from './Button';
 
-const AddFeederModal = ({ isOpen, onClose }) => {
+const AddFeederModal = ({ isOpen, onClose, petProfiles = [] }) => {
     const { user } = useAuth();
     const [formData, setFormData] = useState({
         serialNumber: '',
         pairingCode: '',
-        name: ''
+        name: '',
+        petId: petProfiles[0]?.id || ''
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -24,18 +25,24 @@ const AddFeederModal = ({ isOpen, onClose }) => {
             return;
         }
 
+        if (!formData.petId) {
+            setError('Please assign a pet to this feeder');
+            return;
+        }
+
         setLoading(true);
         try {
             const { data, error } = await registerDevice(
                 formData.serialNumber.trim(),
                 formData.pairingCode.trim(),
-                formData.name.trim() || null
+                formData.name.trim() || null,
+                formData.petId
             );
 
             if (error) throw new Error(error);
 
             // Reset form
-            setFormData({ serialNumber: '', pairingCode: '', name: '' });
+            setFormData({ serialNumber: '', pairingCode: '', name: '', petId: petProfiles[0]?.id || '' });
             onClose(true); // Success
         } catch (err) {
             setError(err.message || 'Failed to register feeder');
@@ -52,7 +59,7 @@ const AddFeederModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex justify-between items-center">
@@ -115,6 +122,30 @@ const AddFeederModal = ({ isOpen, onClose }) => {
                         onChange={handleChange}
                         placeholder="e.g., Living Room"
                     />
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Assign Pet *
+                        </label>
+                        {petProfiles.length > 0 ? (
+                            <select
+                                name="petId"
+                                value={formData.petId}
+                                onChange={handleChange}
+                                className="block w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                required
+                            >
+                                <option value="" disabled>Select a pet</option>
+                                {petProfiles.map(pet => (
+                                    <option key={pet.id} value={pet.id}>{pet.name}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <div className="p-3 bg-orange-50 text-orange-700 text-xs rounded-lg border border-orange-100 italic">
+                                No pet profiles found. Please create a pet profile first.
+                            </div>
+                        )}
+                    </div>
 
                     <div className="pt-2">
                         <Button
