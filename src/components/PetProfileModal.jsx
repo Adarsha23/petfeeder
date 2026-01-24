@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, Trash2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { createPetProfile, updatePetProfile } from '../services/petProfileService';
+import { createPetProfile, updatePetProfile, deletePetProfile } from '../services/petProfileService';
 import Input from './Input';
 import Button from './Button';
 import ImageUpload from './ImageUpload';
@@ -24,6 +24,8 @@ const PetProfileModal = ({ isOpen, onClose, existingProfile = null }) => {
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showDietary, setShowDietary] = useState(false);
 
     // Load existing profile data
@@ -118,6 +120,20 @@ const PetProfileModal = ({ isOpen, onClose, existingProfile = null }) => {
         }
     };
 
+    const handleDelete = async () => {
+        setDeleting(true);
+        try {
+            const { error } = await deletePetProfile(existingProfile.id);
+            if (error) throw new Error(error);
+            onClose(true);
+        } catch (err) {
+            alert(err.message || 'Failed to delete pet profile');
+        } finally {
+            setDeleting(false);
+            setShowDeleteConfirm(false);
+        }
+    };
+
     const handleChange = (e) => {
         const { name, value } = e.target;
 
@@ -147,7 +163,7 @@ const PetProfileModal = ({ isOpen, onClose, existingProfile = null }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center rounded-t-2xl">
@@ -310,23 +326,65 @@ const PetProfileModal = ({ isOpen, onClose, existingProfile = null }) => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-3 pt-4">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => onClose(false)}
-                            className="flex-1"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            variant="primary"
-                            loading={loading}
-                            className="flex-1"
-                        >
-                            {existingProfile ? 'Save Changes' : 'Create Profile'}
-                        </Button>
+                    <div className="flex flex-col gap-3 pt-4 border-t border-gray-100">
+                        <div className="flex gap-3">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => onClose(false)}
+                                className="flex-1"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                loading={loading}
+                                className="flex-1"
+                            >
+                                {existingProfile ? 'Save Changes' : 'Create Profile'}
+                            </Button>
+                        </div>
+
+                        {existingProfile && !showDeleteConfirm && (
+                            <button
+                                type="button"
+                                onClick={() => setShowDeleteConfirm(true)}
+                                className="w-full py-2 text-red-500 hover:text-red-700 text-sm font-medium transition-colors"
+                            >
+                                <Trash2 className="h-4 w-4 inline mr-2" />
+                                Delete Pet Profile
+                            </button>
+                        )}
+
+                        {showDeleteConfirm && (
+                            <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+                                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                                </div>
+                                <h4 className="text-lg font-bold text-gray-900 mb-2">Delete {formData.name}?</h4>
+                                <p className="text-sm text-gray-600 mb-6">
+                                    This action cannot be undone. All feeding history for this pet will be lost.
+                                </p>
+                                <div className="flex gap-3">
+                                    <Button
+                                        variant="secondary"
+                                        className="flex-1"
+                                        onClick={() => setShowDeleteConfirm(false)}
+                                        disabled={deleting}
+                                    >
+                                        Keep Pet
+                                    </Button>
+                                    <Button
+                                        className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                                        onClick={handleDelete}
+                                        loading={deleting}
+                                    >
+                                        Yes, Delete
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </form>
             </div>
