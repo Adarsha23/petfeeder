@@ -55,7 +55,8 @@ const Dashboard = () => {
     };
 
     const loadPetProfile = async () => {
-        setLoadingProfile(true);
+        // Only show loading if we don't have any profiles yet
+        if (petProfiles.length === 0) setLoadingProfile(true);
         try {
             const { data, error } = await getPetProfiles();
             if (error) throw new Error(error);
@@ -68,7 +69,8 @@ const Dashboard = () => {
     };
 
     const loadFeeders = async () => {
-        setLoadingFeeders(true);
+        // Only show loading if we don't have any feeders yet
+        if (feeders.length === 0) setLoadingFeeders(true);
         try {
             const { data, error } = await getUserDevices();
             if (error) throw new Error(error);
@@ -126,8 +128,8 @@ const Dashboard = () => {
         }
     };
 
-    const handleFeed = async (feederId, portionSize) => {
-        const { data, error } = await queueFeedCommand(feederId, portionSize, petProfile?.id);
+    const handleFeed = async (feederId, portionSize, petId) => {
+        const { data, error } = await queueFeedCommand(feederId, portionSize, petId);
         if (error) throw new Error(error);
 
         // Refresh data to show pending status

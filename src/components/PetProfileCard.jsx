@@ -62,18 +62,33 @@ const PetProfileCard = ({ petProfile, onEdit }) => {
 
                     {/* Dietary Info (if exists) */}
                     {(petProfile.dietaryRequirements?.portionSize ||
-                        petProfile.dietaryRequirements?.feedingFrequency) && (
+                        petProfile.dietaryRequirements?.feedingFrequency ||
+                        petProfile.dietaryRequirements?.restrictions ||
+                        petProfile.dietaryRequirements?.notes) && (
                             <div className="mt-4 pt-4 border-t border-gray-200">
                                 <h4 className="text-sm font-semibold text-gray-900 mb-2">Dietary Info</h4>
-                                <div className="space-y-1 text-sm text-gray-600">
+                                <div className="space-y-2 text-sm text-gray-600">
                                     {petProfile.dietaryRequirements.portionSize && (
-                                        <p>Portion: {petProfile.dietaryRequirements.portionSize}g</p>
+                                        <p className="flex justify-between">
+                                            <span>Portion:</span>
+                                            <span className="font-bold text-gray-900">{petProfile.dietaryRequirements.portionSize}g</span>
+                                        </p>
                                     )}
                                     {petProfile.dietaryRequirements.feedingFrequency && (
-                                        <p>Frequency: {petProfile.dietaryRequirements.feedingFrequency}x per day</p>
+                                        <p className="flex justify-between">
+                                            <span>Frequency:</span>
+                                            <span className="font-bold text-gray-900">{petProfile.dietaryRequirements.feedingFrequency}x / day</span>
+                                        </p>
                                     )}
                                     {petProfile.dietaryRequirements.restrictions && (
-                                        <p className="text-orange-600">⚠️ {petProfile.dietaryRequirements.restrictions}</p>
+                                        <div className="bg-orange-50 p-2 rounded-lg border border-orange-100 mt-2">
+                                            <p className="text-orange-700 font-medium">⚠️ {petProfile.dietaryRequirements.restrictions}</p>
+                                        </div>
+                                    )}
+                                    {petProfile.dietaryRequirements.notes && (
+                                        <div className="bg-gray-50 p-2 rounded-lg border border-gray-100 italic">
+                                            <p>"{petProfile.dietaryRequirements.notes}"</p>
+                                        </div>
                                     )}
                                 </div>
                             </div>

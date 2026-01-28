@@ -14,11 +14,33 @@ export const getPetProfiles = async () => {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        return { data, error: null };
+
+        // Transform data to ensure dietaryRequirements is parsed
+        const transformedData = (data || []).map(transformPetData);
+        return { data: transformedData, error: null };
     } catch (error) {
         console.error('Get pet profiles error:', error);
         return { data: null, error: error.message };
     }
+};
+
+// Helper to transform pet data from DB format to UI format
+const transformPetData = (pet) => {
+    let dietaryRequirements = {};
+    try {
+        if (pet.dietary_notes) {
+            dietaryRequirements = typeof pet.dietary_notes === 'string'
+                ? JSON.parse(pet.dietary_notes)
+                : pet.dietary_notes;
+        }
+    } catch (e) {
+        console.warn('Failed to parse dietary_notes:', e);
+    }
+
+    return {
+        ...pet,
+        dietaryRequirements
+    };
 };
 
 // Get single pet profile by ID
@@ -31,7 +53,7 @@ export const getPetProfile = async (profileId) => {
             .single();
 
         if (error) throw error;
-        return { data, error: null };
+        return { data: transformPetData(data), error: null };
     } catch (error) {
         console.error('Get pet profile error:', error);
         return { data: null, error: error.message };
