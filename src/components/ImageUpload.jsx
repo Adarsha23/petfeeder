@@ -23,14 +23,15 @@ const ImageUpload = ({ value, onChange, error }) => {
             return;
         }
 
-        // Convert to base64
+        // Convert to base64 for immediate preview
         const reader = new FileReader();
         reader.onloadend = () => {
-            const base64String = reader.result;
-            setPreview(base64String);
-            onChange(base64String);
+            setPreview(reader.result);
         };
         reader.readAsDataURL(file);
+
+        // Pass the actual file object to the parent
+        onChange(file);
     };
 
     const handleDrop = (e) => {

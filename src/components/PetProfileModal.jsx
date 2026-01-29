@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, ChevronDown, ChevronUp, Trash2, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { createPetProfile, updatePetProfile, deletePetProfile } from '../services/petProfileService';
+import { createPetProfile, updatePetProfile, deletePetProfile, uploadPetPhoto } from '../services/petProfileService';
 import Input from './Input';
 import Button from './Button';
 import ImageUpload from './ImageUpload';
@@ -91,13 +91,22 @@ const PetProfileModal = ({ isOpen, onClose, existingProfile = null }) => {
 
         setLoading(true);
         try {
+            let photoUrl = formData.photo;
+
+            // If photo is a File object, upload it first
+            if (formData.photo instanceof File) {
+                const { url, error: uploadError } = await uploadPetPhoto(formData.photo);
+                if (uploadError) throw new Error(uploadError);
+                photoUrl = url;
+            }
+
             const petData = {
                 name: formData.name.trim(),
                 species: formData.species,
                 breed: formData.breed.trim(),
                 age: formData.age ? parseFloat(formData.age) : 0,
                 weight: formData.weight ? parseFloat(formData.weight) : 0,
-                photo: formData.photo,
+                photo: photoUrl,
                 dietaryRequirements: {
                     portionSize: formData.dietaryRequirements.portionSize ? parseFloat(formData.dietaryRequirements.portionSize) : null,
                     feedingFrequency: formData.dietaryRequirements.feedingFrequency ? parseFloat(formData.dietaryRequirements.feedingFrequency) : null,

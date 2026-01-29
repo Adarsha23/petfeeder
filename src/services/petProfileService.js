@@ -136,3 +136,34 @@ export const deletePetProfile = async (profileId) => {
         return { error: error.message };
     }
 };
+
+// Upload pet photo to storage bucket
+export const uploadPetPhoto = async (file) => {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        // Create a unique file name/path
+        const fileExt = file.name ? file.name.split('.').pop() : 'png';
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('pet-profiles')
+            .upload(fileName, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data } = supabase.storage
+            .from('pet-profiles')
+            .getPublicUrl(fileName);
+
+        return { url: data.publicUrl, error: null };
+    } catch (error) {
+        console.error('Upload photo error:', error);
+        return { url: null, error: error.message };
+    }
+};
