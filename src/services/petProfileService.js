@@ -85,7 +85,7 @@ export const createPetProfile = async (petData) => {
             .single();
 
         if (error) throw error;
-        return { data, error: null };
+        return { data: transformPetData(data), error: null };
     } catch (error) {
         console.error('Create pet profile error:', error);
         return { data: null, error: error.message };
@@ -114,7 +114,7 @@ export const updatePetProfile = async (profileId, petData) => {
             .single();
 
         if (error) throw error;
-        return { data, error: null };
+        return { data: transformPetData(data), error: null };
     } catch (error) {
         console.error('Update pet profile error:', error);
         return { data: null, error: error.message };
