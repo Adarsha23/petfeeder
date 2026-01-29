@@ -58,10 +58,41 @@ export const registerDevice = async (serialNumber, pairingCode, deviceName = nul
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        // Hash the pairing code (in production, this should be done server-side)
+        // Hash the pairing code
         const pairingCodeHash = await hashPairingCode(pairingCode);
 
-        let { data, error } = await supabase
+        // 1. Check if device already exists
+        const { data: existingDevice } = await supabase
+            .from('devices')
+            .select('*')
+            .eq('serial_number', serialNumber)
+            .single();
+
+        if (existingDevice) {
+            // 2. Verify pairing code
+            if (existingDevice.pairing_code_hash !== pairingCodeHash) {
+                throw new Error('This device is already registered. Incorrect pairing code for transfer.');
+            }
+
+            // 3. Update ownership (Transfer/Claim)
+            const { data, error } = await supabase
+                .from('devices')
+                .update({
+                    owner_id: user.id,
+                    device_name: deviceName || existingDevice.device_name,
+                    pet_id: petId,
+                    status: existingDevice.status || 'OFFLINE'
+                })
+                .eq('id', existingDevice.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return { data, error: null };
+        }
+
+        // 4. If new device, insert
+        const { data, error } = await supabase
             .from('devices')
             .insert([
                 {
@@ -77,25 +108,19 @@ export const registerDevice = async (serialNumber, pairingCode, deviceName = nul
             .single();
 
         if (error) {
-            // Fallback if pet_id column doesn't exist yet
-            if (error.message?.includes('pet_id') || error.code === 'PGRST204') {
-                console.warn('pet_id column missing, registering without pet assignment...');
-                const { data: fallbackData, error: fallbackError } = await supabase
+            // Fallback for missing pet_id column
+            if (error.message?.includes('pet_id')) {
+                const { data: fd, error: fe } = await supabase
                     .from('devices')
-                    .insert([
-                        {
-                            serial_number: serialNumber,
-                            pairing_code_hash: pairingCodeHash,
-                            owner_id: user.id,
-                            device_name: deviceName || `Feeder ${serialNumber.slice(-4)}`,
-                            status: 'OFFLINE',
-                        },
-                    ])
-                    .select()
-                    .single();
-
-                if (fallbackError) throw fallbackError;
-                return { data: fallbackData, error: null };
+                    .insert([{
+                        serial_number: serialNumber,
+                        pairing_code_hash: pairingCodeHash,
+                        owner_id: user.id,
+                        device_name: deviceName || `Feeder ${serialNumber.slice(-4)}`
+                    }])
+                    .select().single();
+                if (fe) throw fe;
+                return { data: fd, error: null };
             }
             throw error;
         }
