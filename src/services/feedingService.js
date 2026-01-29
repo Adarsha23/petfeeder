@@ -6,9 +6,9 @@ import { supabase } from '../lib/supabase';
  */
 
 // Get feeding events for a device
-export const getFeedingEvents = async (deviceId, limit = 50) => {
+export const getFeedingEvents = async (deviceId, limit = 50, startDate = null, endDate = null) => {
     try {
-        const { data, error } = await supabase
+        let query = supabase
             .from('feeding_events')
             .select(`
         *,
@@ -19,9 +19,13 @@ export const getFeedingEvents = async (deviceId, limit = 50) => {
         )
       `)
             .eq('device_id', deviceId)
-            .order('timestamp', { ascending: false })
-            .limit(limit);
+            .order('timestamp', { ascending: false });
 
+        if (startDate) query = query.gte('timestamp', startDate);
+        if (endDate) query = query.lte('timestamp', endDate);
+        if (limit) query = query.limit(limit);
+
+        const { data, error } = await query;
         if (error) throw error;
         return { data, error: null };
     } catch (error) {
