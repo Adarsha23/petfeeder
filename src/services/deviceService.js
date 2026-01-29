@@ -61,38 +61,7 @@ export const registerDevice = async (serialNumber, pairingCode, deviceName = nul
         // Hash the pairing code
         const pairingCodeHash = await hashPairingCode(pairingCode);
 
-        // 1. Check if device already exists
-        const { data: existingDevice } = await supabase
-            .from('devices')
-            .select('*')
-            .eq('serial_number', serialNumber)
-            .single();
-
-        if (existingDevice) {
-            // 2. Verify pairing code
-            if (existingDevice.pairing_code_hash !== pairingCodeHash) {
-                throw new Error('This device is already registered. Incorrect pairing code for transfer.');
-            }
-
-            // 3. Update ownership (Transfer/Claim)
-            const { data, error } = await supabase
-                .from('devices')
-                .update({
-                    owner_id: user.id,
-                    device_name: deviceName || existingDevice.device_name,
-                    pet_id: petId,
-                    status: existingDevice.status || 'OFFLINE'
-                })
-                .eq('id', existingDevice.id)
-                .select()
-                .single();
-
-            if (error) throw error;
-            return { data, error: null };
-        }
-
-        // 4. If new device, insert
-        const { data, error } = await supabase
+        let { data, error } = await supabase
             .from('devices')
             .insert([
                 {
@@ -108,7 +77,12 @@ export const registerDevice = async (serialNumber, pairingCode, deviceName = nul
             .single();
 
         if (error) {
-            // Fallback for missing pet_id column
+            // Handle unique constraint violation (already registered)
+            if (error.code === '23505') {
+                throw new Error('This device is already registered to another account. Please unpair it first.');
+            }
+
+            // Fallback if pet_id column doesn't exist yet
             if (error.message?.includes('pet_id')) {
                 const { data: fd, error: fe } = await supabase
                     .from('devices')
@@ -116,10 +90,14 @@ export const registerDevice = async (serialNumber, pairingCode, deviceName = nul
                         serial_number: serialNumber,
                         pairing_code_hash: pairingCodeHash,
                         owner_id: user.id,
-                        device_name: deviceName || `Feeder ${serialNumber.slice(-4)}`
+                        device_name: deviceName || `Feeder ${serialNumber.slice(-4)}`,
+                        status: 'OFFLINE'
                     }])
                     .select().single();
-                if (fe) throw fe;
+                if (fe) {
+                    if (fe.code === '23505') throw new Error('This device is already registered to another account.');
+                    throw fe;
+                }
                 return { data: fd, error: null };
             }
             throw error;
