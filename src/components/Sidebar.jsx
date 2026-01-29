@@ -6,7 +6,8 @@ import {
     Wifi,
     Settings,
     LogOut,
-    PawPrint
+    PawPrint,
+    Clock
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -15,6 +16,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
     const navItems = [
         { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+        { icon: Clock, label: 'Schedules', path: '/schedules' },
         { icon: BarChart3, label: 'Analytics', path: '/analytics' },
         { icon: Heart, label: 'Pet Health', path: '/health' },
         { icon: Wifi, label: 'Devices', path: '/devices' },

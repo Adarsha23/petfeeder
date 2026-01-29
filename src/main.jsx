@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
+import Schedules from './pages/Schedules'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -24,6 +25,14 @@ createRoot(document.getElementById('root')).render(
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/schedules"
+            element={
+              <ProtectedRoute>
+                <Schedules />
               </ProtectedRoute>
             }
           />
