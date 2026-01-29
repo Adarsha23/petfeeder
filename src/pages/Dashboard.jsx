@@ -185,20 +185,6 @@ const Dashboard = () => {
                         <div className="xl:col-span-2 space-y-10">
                             {/* Pet Profile */}
                             <div>
-                                <div className="flex justify-between items-end mb-6">
-                                    {petProfiles.length > 0 && (
-                                        <button
-                                            onClick={() => {
-                                                setEditingPet(null);
-                                                setShowPetModal(true);
-                                            }}
-                                            className="text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors bg-blue-50 px-3 py-1.5 rounded-lg"
-                                        >
-                                            Add Profile
-                                        </button>
-                                    )}
-                                </div>
-
                                 {loadingProfile ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
                                         {[1, 2].map(i => (
@@ -310,29 +296,13 @@ const Dashboard = () => {
                                 <FeedingHistory feeders={feeders} />
                             </div>
 
-                            {/* Reliable Feeding Card */}
-                            <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-600 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-blue-200/50 relative overflow-hidden group">
-                                <div className="absolute -top-10 -right-10 opacity-10 group-hover:rotate-12 transition-transform duration-1000">
-                                    <Wifi className="h-48 w-48" />
-                                </div>
-                                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 w-fit mb-6">
-                                    <Wifi className="h-6 w-6 text-white" />
-                                </div>
-                                <h4 className="text-2xl font-black mb-4 tracking-tight leading-tight">Reliable Offline Feeding 📶</h4>
-                                <p className="text-blue-50/90 leading-relaxed font-medium mb-8">
-                                    Even if your internet goes down, your scheduled feedings are stored locally on the device to ensure your pet never misses a meal.
-                                </p>
-                                <button className="px-6 py-3 bg-white text-blue-600 rounded-2xl font-bold text-sm hover:bg-blue-50 transition-colors shadow-lg">
-                                    Device Status
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
-            </main>
+            </main >
 
             {/* Modals */}
-            <PetProfileModal
+            < PetProfileModal
                 isOpen={showPetModal}
                 onClose={handlePetModalClose}
                 existingProfile={editingPet}
@@ -360,7 +330,7 @@ const Dashboard = () => {
                 onUpdate={handleFeederUpdate}
                 onRefresh={handleFeederRefresh}
             />
-        </div>
+        </div >
     );
 };
 
