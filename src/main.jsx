@@ -10,11 +10,13 @@ import Signup from './pages/Signup'
 import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
 import Schedules from './pages/Schedules'
+import ScheduleWorker from './components/ScheduleWorker'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
+        <ScheduleWorker />
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
