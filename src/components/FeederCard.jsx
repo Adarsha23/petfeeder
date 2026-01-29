@@ -22,14 +22,10 @@ const FeederCard = ({ feeder, onManage, onFeedNow }) => {
             </div>
 
             {/* Stats / Info */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-1 gap-4 mb-6">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                     <QrCode className="h-4 w-4 text-gray-400" />
                     <span>ID: {feeder.serial_number?.slice(-8)}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Battery className="h-4 w-4 text-green-500" />
-                    <span>Battery: 85%</span>
                 </div>
             </div>
 

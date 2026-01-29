@@ -10,6 +10,7 @@ import Signup from './pages/Signup'
 import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
 import Schedules from './pages/Schedules'
+import Analytics from './pages/Analytics'
 import ScheduleWorker from './components/ScheduleWorker'
 
 createRoot(document.getElementById('root')).render(
@@ -35,6 +36,14 @@ createRoot(document.getElementById('root')).render(
             element={
               <ProtectedRoute>
                 <Schedules />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <Analytics />
               </ProtectedRoute>
             }
           />

@@ -10,24 +10,46 @@ import { queueFeedCommand } from '../services/commandService';
  */
 const ScheduleWorker = () => {
     const { user } = useAuth();
-    const intervalRef = useRef(null);
+    const isRunningRef = useRef(false);
 
     useEffect(() => {
         if (!user) return;
 
-        console.log('Schedule Worker Started: Monitoring routines...');
+        console.log('Schedule Worker initialized.');
+        isRunningRef.current = true;
 
-        // Run check every 60 seconds
-        intervalRef.current = setInterval(() => {
-            checkSchedules();
-        }, 60000);
+        const runLoop = async () => {
+            while (isRunningRef.current) {
+                // Try to acquire the "Master Worker" lock
+                try {
+                    // We use ifAvailable: true to avoid queuing. 
+                    // If another tab has the lock, this call returns immediately with null.
+                    await navigator.locks.request('pet_feeder_worker_lock', { ifAvailable: true }, async (lock) => {
+                        if (!lock) {
+                            // Another tab is the master
+                            return;
+                        }
 
-        // Run an immediate check on mount
-        checkSchedules();
+                        // We are the master! Run the check.
+                        await checkSchedules();
+
+                        // Wait for the next minute while holding the lock briefly 
+                        // or just release and wait outside. Releasing/re-requesting 
+                        // every minute is safer for tab closure handling.
+                    });
+                } catch (err) {
+                    console.error('[Worker Lock Error]:', err);
+                }
+
+                // Wait 60s before trying to become master again
+                await new Promise(resolve => setTimeout(resolve, 60000));
+            }
+        };
+
+        runLoop();
 
         return () => {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-            console.log('Schedule Worker Stopped.');
+            isRunningRef.current = false;
         };
     }, [user]);
 
