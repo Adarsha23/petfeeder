@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './index.css'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import ScheduleWorker from './components/ScheduleWorker'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -11,7 +12,6 @@ import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
 import Schedules from './pages/Schedules'
 import Analytics from './pages/Analytics'
-import ScheduleWorker from './components/ScheduleWorker'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

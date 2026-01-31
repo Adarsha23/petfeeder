@@ -204,3 +204,27 @@ export const getFeedingAccuracyMetrics = async (deviceId, limit = 100) => {
         return { data: null, error: error.message };
     }
 };
+
+// Get all feeding history for the user (across all devices)
+export const getFeedingHistory = async (limit = 100) => {
+    try {
+        const { data, error } = await supabase
+            .from('feeding_events')
+            .select(`
+                *,
+                pet_profiles (
+                    id,
+                    name,
+                    photo_url
+                )
+            `)
+            .order('timestamp', { ascending: false })
+            .limit(limit);
+
+        if (error) throw error;
+        return { data, error: null };
+    } catch (error) {
+        console.error('Get feeding history error:', error);
+        return { data: null, error: error.message };
+    }
+};
