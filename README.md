@@ -323,6 +323,18 @@ The ESP32 will need to:
 
 See [`SUPABASE_SETUP.md`](./SUPABASE_SETUP.md) for common issues and solutions.
 
+## 🔌 Hardware Serial Bridge (Phase 18)
+
+For development with Arduino Uno (CH340), use the included Node.js Serial Bridge:
+
+1. **Connect Hardware**: Plug Arduino into USB.
+2. **Identify Port**: Run `ls /dev/cu.*` and find the port (e.g., `/dev/cu.usbserial-110`).
+3. **Configure & Run**:
+   ```bash
+   node src/hardware/bridge.js
+   ```
+   The bridge will listen for Supabase commands and trigger the servo.
+
 ## 📄 License
 
 MIT License - see LICENSE file for details
