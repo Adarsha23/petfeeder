@@ -1,136 +1,163 @@
 import { Link } from 'react-router-dom';
-import { PawPrint, Scale, Wifi, Users, Bell, Clock } from 'lucide-react';
+import { PawPrint, Scale, Wifi, Users, Bell, Clock, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import Button from '../components/Button';
+import { Card, CardContent } from '../components/ui/card';
+import { cn } from '@/lib/utils';
 
 const Home = () => {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="min-h-screen bg-background text-foreground font-inter selection:bg-primary/10">
             {/* Header */}
-            <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+            <header className="bg-background/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center py-4">
+                    <div className="flex justify-between items-center h-16">
                         <div className="flex items-center gap-2">
-                            <PawPrint className="h-8 w-8 text-blue-600" />
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            <div className="bg-primary p-1.5 rounded-lg">
+                                <PawPrint className="h-5 w-5 text-primary-foreground" />
+                            </div>
+                            <h1 className="text-xl font-bold tracking-tight">
                                 Smart Pet Feeder
                             </h1>
                         </div>
-                        <div className="flex gap-3">
-                            <Link
-                                to="/login"
-                                className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors"
-                            >
-                                Login
+                        <nav className="flex items-center gap-4">
+                            <Link to="/login">
+                                <Button variant="ghost" size="sm" className="font-semibold">
+                                    Login
+                                </Button>
                             </Link>
-                            <Link
-                                to="/signup"
-                                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-all shadow-md hover:shadow-lg"
-                            >
-                                Get Started
+                            <Link to="/signup">
+                                <Button variant="default" size="sm" className="font-semibold px-5">
+                                    Get Started
+                                </Button>
                             </Link>
-                        </div>
+                        </nav>
                     </div>
                 </div>
             </header>
 
             {/* Hero Section */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-                <div className="text-center max-w-3xl mx-auto">
-                    <h2 className="text-5xl font-bold text-gray-900 mb-6">
-                        Feed Your Pet with
-                        <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            Precision & Care
-                        </span>
-                    </h2>
-                    <p className="text-xl text-gray-600 mb-8">
-                        IoT-enabled smart feeding system with precise portion control, remote monitoring,
-                        and comprehensive analytics. Perfect for busy pet parents.
-                    </p>
-                    <div className="flex gap-4 justify-center">
-                        <Link
-                            to="/signup"
-                            className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-lg transition-all shadow-lg hover:shadow-xl"
-                        >
-                            Create Account
-                        </Link>
-                        <Link
-                            to="/login"
-                            className="px-8 py-4 bg-white text-blue-600 rounded-lg hover:bg-gray-50 font-semibold text-lg transition-all shadow-lg border-2 border-blue-600"
-                        >
-                            Sign In
-                        </Link>
+            <section className="relative overflow-hidden pt-20 pb-16 lg:pt-32 lg:pb-24">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="text-center max-w-4xl mx-auto">
+                        <div className="inline-flex items-center gap-2 bg-muted px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-6">
+                            <Zap className="h-3 w-3 text-primary animate-pulse" />
+                            Next-Gen Pet Care Integration
+                        </div>
+                        <h2 className="text-4xl md:text-6xl font-black tracking-tight text-foreground mb-6 leading-[1.1]">
+                            Feed Your Pet with<br />
+                            <span className="text-muted-foreground">Precision & Care</span>
+                        </h2>
+                        <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
+                            A premium, IoT-enabled ecosystem for modern pet parents.
+                            Precise portion control, real-time analytics, and bulletproof reliability.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                            <Link to="/signup" className="w-full sm:w-auto">
+                                <Button size="lg" className="w-full sm:px-10 h-12 text-base font-bold uppercase tracking-wide gap-2">
+                                    Create Account
+                                    <ArrowRight className="h-4 w-4" />
+                                </Button>
+                            </Link>
+                            <Link to="/login" className="w-full sm:w-auto">
+                                <Button variant="outline" size="lg" className="w-full sm:px-10 h-12 text-base font-bold uppercase tracking-wide">
+                                    Sign In
+                                </Button>
+                            </Link>
+                        </div>
                     </div>
+                </div>
+
+                {/* Decorative Elements */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full opacity-5 pointer-events-none">
+                    <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary rounded-full blur-[120px]" />
+                    <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary rounded-full blur-[120px]" />
                 </div>
             </section>
 
             {/* Features Grid */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <h3 className="text-3xl font-bold text-center text-gray-900 mb-12">
-                    Everything You Need for Smart Pet Care
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+                <div className="flex flex-col items-center text-center space-y-4 mb-16">
+                    <h3 className="text-3xl font-black tracking-tighter uppercase sm:text-4xl">
+                        Advanced Features
+                    </h3>
+                    <p className="text-muted-foreground max-w-lg">
+                        Engineered for accuracy and peace of mind. Every detail optimized for your pet's health.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <FeatureCard
                         icon={Scale}
                         title="Precise Portions"
                         description="Closed-loop weight-based dispensing ensures accurate feeding every time, not just timed guesses."
-                        gradient="from-blue-500 to-cyan-500"
                     />
                     <FeatureCard
                         icon={Wifi}
                         title="Remote Control"
                         description="Monitor and control feeding from anywhere. Works offline and syncs when reconnected."
-                        gradient="from-purple-500 to-pink-500"
                     />
                     <FeatureCard
                         icon={Users}
                         title="Multi-Caregiver"
                         description="Share access with family members. Everyone can help, and you'll know who fed your pet."
-                        gradient="from-orange-500 to-red-500"
                     />
                     <FeatureCard
                         icon={Bell}
-                        title="Smart Notifications"
-                        description="Get alerts for feeding completion, low food, low water, and connection issues."
-                        gradient="from-green-500 to-teal-500"
+                        title="Smart Alerts"
+                        description="Get mission-critical alerts for feeding completion, low food levels, and connectivity."
                     />
                     <FeatureCard
                         icon={Clock}
-                        title="Feeding History"
-                        description="Track feeding patterns over time with detailed logs and analytics dashboard."
-                        gradient="from-indigo-500 to-purple-500"
+                        title="Analytics"
+                        description="Track feeding patterns over time with detailed logs and comprehensive analytics dashboard."
                     />
                     <FeatureCard
-                        icon={PawPrint}
-                        title="Pet Profiles"
-                        description="Manage pet information, dietary requirements, and feeding preferences in one place."
-                        gradient="from-pink-500 to-rose-500"
+                        icon={ShieldCheck}
+                        title="Failsafe Design"
+                        description="Hardware-level verification ensures your pet is fed even during server maintenance or WiFi drops."
                     />
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="bg-white border-t border-gray-200 mt-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <p className="text-center text-gray-600">
-                        FYP Project - Herald College Kathmandu | Adarsha Prasai (2408599)
-                    </p>
-                    <p className="text-center text-gray-500 text-sm mt-2">
-                        © 2025 Smart Pet Feeder. All rights reserved.
-                    </p>
+            <footer className="bg-background border-t border-border mt-12">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+                        <div className="flex items-center gap-2">
+                            <PawPrint className="h-6 w-6 text-primary" />
+                            <span className="text-lg font-bold tracking-tight">Smart Pet Feeder</span>
+                        </div>
+                        <div className="flex flex-col items-center md:items-end">
+                            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">
+                                FYP | Herald College Kathmandu
+                            </p>
+                            <p className="text-sm text-foreground/80 font-medium">
+                                Adarsha Prasai (2408599)
+                            </p>
+                        </div>
+                    </div>
+                    <div className="mt-12 pt-8 border-t border-border/50 text-center">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                            © 2025 Smart Pet Feeder. All rights reserved.
+                        </p>
+                    </div>
                 </div>
             </footer>
         </div>
     );
 };
 
-const FeatureCard = ({ icon: Icon, title, description, gradient }) => {
+const FeatureCard = ({ icon: Icon, title, description }) => {
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group">
-            <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                <Icon className="h-6 w-6 text-white" />
-            </div>
-            <h4 className="text-xl font-bold text-gray-900 mb-2">{title}</h4>
-            <p className="text-gray-600">{description}</p>
-        </div>
+        <Card className="hover:border-primary/50 transition-all duration-300 group">
+            <CardContent className="p-8">
+                <div className="w-12 h-12 rounded-xl bg-primary/5 flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                    <Icon className="h-6 w-6 transition-transform group-hover:scale-110" />
+                </div>
+                <h4 className="text-lg font-bold tracking-tight mb-2 group-hover:text-primary transition-colors">{title}</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+            </CardContent>
+        </Card>
     );
 };
 
