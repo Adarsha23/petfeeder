@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Clock, CheckCircle2, XCircle, Loader2, Info } from 'lucide-react';
 import { getFeedingEvents } from '../services/feedingService';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
+import { cn } from '@/lib/utils';
+import Button from './Button';
 
 const FeedingHistory = ({ feeders }) => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [filter, setFilter] = useState('today'); // 'today', 'yesterday', 'month', 'all'
+    const [filter, setFilter] = useState('today');
 
     useEffect(() => {
         if (feeders && feeders.length > 0) {
@@ -34,7 +37,6 @@ const FeedingHistory = ({ feeders }) => {
                 startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
             }
 
-            // Get history for all feeders
             const allEvents = [];
             for (const feeder of feeders) {
                 const { data, error: fetchError } = await getFeedingEvents(
@@ -49,7 +51,6 @@ const FeedingHistory = ({ feeders }) => {
                 }
             }
 
-            // Sort all combined events by timestamp descending
             allEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             setEvents(filter === 'all' ? allEvents : allEvents.slice(0, 20));
         } catch (err) {
@@ -67,112 +68,97 @@ const FeedingHistory = ({ feeders }) => {
 
         if (diffInMinutes < 1) return 'Just now';
         if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+        if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
 
-        const diffInHours = Math.floor(diffInMinutes / 60);
-        if (diffInHours < 24) return `${diffInHours}h ago`;
-
-        return date.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 text-blue-600 animate-spin mr-2" />
-                <span className="text-gray-500">Loading activity...</span>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="p-4 bg-red-50 text-red-700 rounded-lg flex items-center gap-2">
-                <Info className="h-5 w-5" />
-                <p>{error}</p>
+            <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                <span className="text-sm font-medium text-muted-foreground">Analysing activity logs...</span>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6">
-            {/* Filter Buttons */}
-            <div className="flex flex-wrap gap-2 p-1 bg-gray-100 rounded-xl w-fit">
-                {[
-                    { id: 'today', label: 'Today' },
-                    { id: 'yesterday', label: 'Yesterday' },
-                    { id: 'month', label: 'This Month' },
-                    { id: 'all', label: 'All Time' }
-                ].map((item) => (
-                    <button
-                        key={item.id}
-                        onClick={() => setFilter(item.id)}
-                        className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${filter === item.id
-                                ? 'bg-white text-blue-600 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                            }`}
-                    >
-                        {item.label}
-                    </button>
-                ))}
-            </div>
-
-            {events.length > 0 ? (
-                <div className="overflow-hidden bg-white border border-gray-200 rounded-xl">
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feeder</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Portion</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {events.map((event) => (
-                                    <tr key={event.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">{event.feederName}</div>
-                                            <div className="text-xs text-gray-500">{event.pet_profiles?.name || 'Manual'}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                            {event.actual_grams || event.target_grams}g
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <div className="flex items-center gap-1">
-                                                <Clock className="h-3 w-3" />
-                                                {formatDate(event.timestamp)}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${event.status === 'SUCCESS'
-                                                ? 'bg-green-100 text-green-700'
-                                                : event.status === 'PENDING'
-                                                    ? 'bg-blue-100 text-blue-700'
-                                                    : 'bg-red-100 text-red-700'
-                                                }`}>
-                                                {event.status === 'SUCCESS' ? (
-                                                    <CheckCircle2 className="h-3 w-3" />
-                                                ) : event.status === 'PENDING' ? (
-                                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                                ) : (
-                                                    <XCircle className="h-3 w-3" />
-                                                )}
-                                                {event.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+        <Card className="border-border">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div className="space-y-1">
+                    <CardTitle className="text-lg font-bold tracking-tight">Recent Activity</CardTitle>
+                    <CardDescription>Feeding events from your connected devices</CardDescription>
+                </div>
+                <div className="flex bg-muted p-1 rounded-md border border-border">
+                    {['today', 'month', 'all'].map((f) => (
+                        <button
+                            key={f}
+                            onClick={() => setFilter(f)}
+                            className={cn(
+                                "px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-sm transition-all",
+                                filter === f ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            {f}
+                        </button>
+                    ))}
+                </div>
+            </CardHeader>
+            <CardContent>
+                {error ? (
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md flex items-center gap-2 text-destructive text-sm font-medium">
+                        <Info className="h-4 w-4" />
+                        {error}
                     </div>
-                </div>
-            ) : (
-                <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                    <Clock className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">No feeding activity yet</p>
-                </div>
-            )}
-        </div>
+                ) : events.length > 0 ? (
+                    <div className="space-y-4">
+                        {events.map((event) => (
+                            <div key={event.id} className="flex items-center justify-between group">
+                                <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                        "w-8 h-8 rounded-full flex items-center justify-center border",
+                                        event.status === 'SUCCESS' ? "bg-success/10 border-success/20 text-success" :
+                                            event.status === 'PENDING' ? "bg-primary/10 border-primary/20 text-primary" :
+                                                "bg-destructive/10 border-destructive/20 text-destructive"
+                                    )}>
+                                        {event.status === 'SUCCESS' ? <CheckCircle2 className="h-4 w-4" /> :
+                                            event.status === 'PENDING' ? <Loader2 className="h-4 w-4 animate-spin" /> :
+                                                <XCircle className="h-4 w-4" />}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-foreground leading-none">
+                                            {event.actual_grams || event.target_grams}g <span className="text-muted-foreground font-normal">Fed</span>
+                                        </p>
+                                        <p className="text-[11px] text-muted-foreground mt-1">
+                                            {event.feederName} • {event.pet_profiles?.name || 'Manual'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[10px] font-bold text-muted-foreground flex items-center justify-end gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {formatDate(event.timestamp)}
+                                    </p>
+                                    <p className={cn(
+                                        "text-[9px] font-black uppercase tracking-widest mt-1",
+                                        event.status === 'SUCCESS' ? "text-success" :
+                                            event.status === 'PENDING' ? "text-primary" :
+                                                "text-destructive"
+                                    )}>
+                                        {event.status}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-10 border-2 border-dashed border-border rounded-lg bg-muted/20">
+                        <Clock className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+                        <p className="text-sm font-medium text-muted-foreground">No recent activity detected</p>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     );
 };
 
