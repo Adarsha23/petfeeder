@@ -1,4 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import "tailwindcss";
+
+@theme {
+    --font-inter: "Inter", sans-serif;
+
+    --color-background: #ffffff;
+    --color-foreground: #09090b;
+
+    --color-muted: #f4f4f5;
+    --color-muted-foreground: #71717a;
+
+    --color-popover: #ffffff;
+    --color-popover-foreground: #09090b;
+
+    --color-card: #ffffff;
+    --color-card-foreground: #09090b;
+
+    --color-border: #e4e4e7;
+    --color-input: #e4e4e7;
+
+    --color-primary: #18181b;
+    --color-primary-foreground: #fafafa;
+
+    --color-secondary: #f4f4f5;
+    --color-secondary-foreground: #18181b;
+
+    --color-accent: #f4f4f5;
+    --color-accent-foreground: #18181b;
+
+    --color-destructive: #ef4444;
+    --color-destructive-foreground: #fafafa;
+
+    --color-ring: #18181b;
+
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius: 0.5rem;
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground font-inter;
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
@@ -7,14 +58,14 @@
 }
 
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #888;
+    @apply bg-muted;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    @apply bg-muted-foreground/30;
 }
