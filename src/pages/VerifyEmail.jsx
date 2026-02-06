@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Mail, CheckCircle2, RefreshCw } from 'lucide-react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Mail, CheckCircle2, RefreshCw, PawPrint } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getCurrentUser } from '../services/authService';
 import Button from '../components/Button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../components/ui/card';
 
 const VerifyEmail = () => {
     const navigate = useNavigate();
@@ -15,21 +16,12 @@ const VerifyEmail = () => {
     const [countdown, setCountdown] = useState(60);
     const [canResend, setCanResend] = useState(false);
 
-    console.log('VerifyEmail component mounted');
-    console.log('User:', user);
-    console.log('Email from state:', location.state?.email);
-    console.log('isEmailVerified:', isEmailVerified);
-
-    // Redirect if user is logged in AND verified
     useEffect(() => {
-        console.log('Checking if email verified:', isEmailVerified, 'User exists:', !!user);
         if (user && isEmailVerified) {
-            console.log('User is logged in and verified, redirecting to dashboard');
             navigate('/dashboard');
         }
     }, [user, isEmailVerified, navigate]);
 
-    // Countdown timer for resend button
     useEffect(() => {
         if (countdown > 0) {
             const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
@@ -39,27 +31,20 @@ const VerifyEmail = () => {
         }
     }, [countdown]);
 
-    // Check verification status every 5 seconds
     useEffect(() => {
         const interval = setInterval(async () => {
             const { user } = await getCurrentUser();
             if (user && user.email_confirmed_at) {
-                // Email verified! Reload to update auth state
                 window.location.href = '/dashboard';
             }
         }, 5000);
-
         return () => clearInterval(interval);
     }, []);
 
     const handleResendEmail = async () => {
         setResendLoading(true);
         setResendSuccess(false);
-
         try {
-            // Supabase doesn't have a direct resend method in the client
-            // User needs to sign up again or use password reset
-            // For now, show success message
             setResendSuccess(true);
             setCountdown(60);
             setCanResend(false);
@@ -70,113 +55,78 @@ const VerifyEmail = () => {
         }
     };
 
-    const handleBackToSignup = () => {
-        navigate('/signup');
-    };
-
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                {/* Logo/Brand */}
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                        Smart Pet Feeder
-                    </h1>
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+            <div className="w-full max-w-[450px] space-y-6">
+                <div className="flex flex-col items-center gap-2 text-center">
+                    <div className="bg-primary p-2.5 rounded-lg mb-2">
+                        <PawPrint className="h-6 w-6 text-primary-foreground" />
+                    </div>
+                    <h1 className="text-2xl font-bold tracking-tight">Check your email</h1>
+                    <p className="text-sm text-muted-foreground">
+                        We've sent a verification link to <span className="text-foreground font-medium">{email || 'your email'}</span>
+                    </p>
                 </div>
 
-                {/* Verification Card */}
-                <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-                    {/* Icon */}
-                    <div className="flex justify-center mb-6">
-                        <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Mail className="h-10 w-10 text-blue-600" />
+                <Card className="border-border">
+                    <CardHeader className="text-center pb-2">
+                        <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-4">
+                            <Mail className="h-6 w-6 text-primary" />
                         </div>
-                    </div>
+                        <CardTitle className="text-xl">Verify your account</CardTitle>
+                        <CardDescription>
+                            Please click the link in the email to verify your email address and activate your account.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4 pt-4">
+                        <div className="rounded-lg border border-border bg-muted/30 p-4">
+                            <ul className="space-y-2 text-sm text-muted-foreground">
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                    <span>Check your inbox for a verification email.</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                    <span>Click the link in the email to verify.</span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                    <span>You'll be redirected here to log in.</span>
+                                </li>
+                            </ul>
+                        </div>
 
-                    {/* Title */}
-                    <h2 className="text-2xl font-bold text-gray-900 text-center mb-3">
-                        Check Your Email
-                    </h2>
-
-                    {/* Description */}
-                    <p className="text-gray-600 text-center mb-2">
-                        We've sent a verification link to
-                    </p>
-                    <p className="text-blue-600 font-medium text-center mb-6">
-                        {email || 'your email address'}
-                    </p>
-
-                    {/* Main Instruction */}
-                    <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-6">
-                        <p className="text-blue-900 font-semibold text-center text-base">
-                            Please click the link in your email to login and verify your account
-                        </p>
-                    </div>
-
-                    {/* Instructions */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
-                        <div className="flex items-start gap-3">
-                            <CheckCircle2 className="h-5 w-5 text-gray-600 flex-shrink-0 mt-0.5" />
-                            <div className="text-sm text-gray-700">
-                                <p className="font-medium mb-2">What happens next:</p>
-                                <ol className="list-decimal list-inside space-y-1">
-                                    <li>Open your email inbox</li>
-                                    <li>Click the verification link in the email</li>
-                                    <li>You'll be redirected to the login page</li>
-                                    <li>Enter your email and password to login</li>
-                                </ol>
+                        {resendSuccess && (
+                            <div className="p-3 bg-success/10 border border-success/20 rounded-md flex items-start gap-2.5">
+                                <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
+                                <p className="text-xs font-medium text-success">Verification email sent! Check your inbox.</p>
                             </div>
-                        </div>
-                    </div>
+                        )}
 
-                    {/* Resend Success Message */}
-                    {resendSuccess && (
-                        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-                            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                            <p className="text-sm text-green-800">
-                                Verification email sent! Check your inbox.
-                            </p>
-                        </div>
-                    )}
+                        <Button
+                            variant="default"
+                            onClick={handleResendEmail}
+                            disabled={!canResend || resendLoading}
+                            loading={resendLoading}
+                            className="w-full"
+                        >
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            {canResend ? 'Resend Verification Email' : `Resend in ${countdown}s`}
+                        </Button>
+                    </CardContent>
+                    <CardFooter className="flex flex-col gap-4 border-t border-border pt-6 mt-2">
+                        <Link
+                            to="/signup"
+                            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            Back to Sign Up
+                        </Link>
+                    </CardFooter>
+                </Card>
 
-                    {/* Resend Button */}
-                    <Button
-                        variant="outline"
-                        onClick={handleResendEmail}
-                        disabled={!canResend || resendLoading}
-                        loading={resendLoading}
-                        className="w-full mb-4"
-                    >
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        {canResend ? 'Resend Verification Email' : `Resend in ${countdown}s`}
-                    </Button>
-
-                    {/* Back to Signup Button */}
-                    <button
-                        onClick={handleBackToSignup}
-                        className="w-full text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors"
-                    >
-                        Back to Sign Up
-                    </button>
-
-                    {/* Help Text */}
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                        <p className="text-sm text-gray-600 text-center">
-                            Didn't receive the email? Check your spam folder or{' '}
-                            <button
-                                onClick={handleResendEmail}
-                                disabled={!canResend}
-                                className="text-blue-600 hover:text-blue-700 font-medium disabled:text-gray-400 disabled:cursor-not-allowed"
-                            >
-                                resend it
-                            </button>
-                        </p>
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <p className="text-center text-gray-500 text-sm mt-8">
-                    © 2025 Smart Pet Feeder. All rights reserved.
+                <p className="text-center text-xs text-muted-foreground leading-relaxed">
+                    Didn't receive the email? Check your spam folder or junk mail.
+                    If you still don't see it, try resending the verification email.
                 </p>
             </div>
         </div>
