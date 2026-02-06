@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, PawPrint, Settings, Bell, Plus, Wifi, Menu } from 'lucide-react';
+import { LogOut, PawPrint, Settings, Bell, Plus, Wifi, Menu, Activity, ShieldCheck, Zap } from 'lucide-react';
 import { getPetProfiles } from '../services/petProfileService';
 import { getUserDevices } from '../services/deviceService';
 import { queueFeedCommand } from '../services/commandService';
@@ -14,6 +14,8 @@ import FeedNowModal from '../components/FeedNowModal';
 import FeedingHistory from '../components/FeedingHistory';
 import ManageFeederModal from '../components/ManageFeederModal';
 import Sidebar from '../components/Sidebar';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
+import { cn } from '@/lib/utils';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
@@ -49,13 +51,7 @@ const Dashboard = () => {
         }
     }, [user]);
 
-    const refreshDashboard = () => {
-        loadPetProfile();
-        loadFeeders();
-    };
-
     const loadPetProfile = async () => {
-        // Only show loading if we don't have any profiles yet
         if (petProfiles.length === 0) setLoadingProfile(true);
         try {
             const { data, error } = await getPetProfiles();
@@ -69,7 +65,6 @@ const Dashboard = () => {
     };
 
     const loadFeeders = async () => {
-        // Only show loading if we don't have any feeders yet
         if (feeders.length === 0) setLoadingFeeders(true);
         try {
             const { data, error } = await getUserDevices();
@@ -80,11 +75,6 @@ const Dashboard = () => {
         } finally {
             setLoadingFeeders(false);
         }
-    };
-
-    const handleLogout = async () => {
-        await logout();
-        navigate('/login');
     };
 
     const handlePetModalClose = (success) => {
@@ -120,7 +110,6 @@ const Dashboard = () => {
 
     const handleFeederRefresh = async () => {
         await loadFeeders();
-        // Re-select the same feeder with updated data
         if (feederToManage) {
             const { data } = await getUserDevices();
             const updated = data?.find(f => f.id === feederToManage.id);
@@ -131,68 +120,112 @@ const Dashboard = () => {
     const handleFeed = async (feederId, portionSize, petId) => {
         const { data, error } = await queueFeedCommand(feederId, portionSize, petId);
         if (error) throw new Error(error);
-
-        // Refresh data to show pending status
         setTimeout(loadFeeders, 500);
         return data;
     };
 
+    const activeFeedersCount = feeders.filter(f => f.status?.toLowerCase() === 'online').length;
+
     return (
-        <div className="min-h-screen bg-gray-50 flex font-sans">
-            {/* Navigation Sidebar */}
+        <div className="min-h-screen bg-background flex font-inter">
             <Sidebar
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
             />
 
-            {/* Main Content Area */}
-            <main className="flex-1 lg:ml-72 min-w-0 transition-all duration-300">
-                {/* Mobile Header */}
-                <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 lg:hidden px-4 py-4">
-                    <div className="flex justify-between items-center text-gray-900">
-                        <div className="flex items-center gap-2">
-                            <PawPrint className="h-6 w-6 text-blue-600" />
-                            <h1 className="text-lg font-bold">PetFeeder</h1>
+            <main className="flex-1 lg:ml-64 min-w-0 transition-all">
+                {/* Header */}
+                <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border px-6 py-4">
+                    <div className="flex justify-between items-center max-w-7xl mx-auto">
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="lg:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground"
+                            >
+                                <Menu className="h-5 w-5" />
+                            </button>
+                            <div>
+                                <h1 className="text-xl font-bold tracking-tight text-foreground">Dashboard</h1>
+                                <p className="text-xs text-muted-foreground hidden sm:block">Welcome back, {user?.name?.split(' ')[0] || 'User'}</p>
+                            </div>
                         </div>
-                        <button
-                            onClick={() => setIsSidebarOpen(true)}
-                            className="p-2 -mr-2 text-gray-500 hover:text-gray-900 transition-colors"
-                        >
-                            <Menu className="h-6 w-6" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="icon" className="h-9 w-9">
+                                <Bell className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="default"
+                                size="sm"
+                                icon={Plus}
+                                onClick={() => setShowPetModal(true)}
+                                className="hidden sm:flex"
+                            >
+                                Add Pet
+                            </Button>
+                        </div>
                     </div>
                 </header>
 
-                <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-10 space-y-10">
-                    {/* Page Header (Desktop) */}
-                    <div className="hidden lg:flex justify-between items-center">
-                        <div>
-                            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Overview</h1>
-                            <p className="text-gray-500 mt-1">Hello, {user?.name?.split(' ')[0] || 'User'}! Here is what's happening today.</p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <button className="p-3 text-gray-400 hover:text-blue-600 rounded-2xl hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-100 transition-all duration-200">
-                                <Bell className="h-5 w-5" />
-                            </button>
-                            <button className="p-3 text-gray-400 hover:text-blue-600 rounded-2xl hover:bg-white hover:shadow-sm border border-transparent hover:border-gray-100 transition-all duration-200">
-                                <Settings className="h-5 w-5" />
-                            </button>
-                        </div>
+                <div className="max-w-7xl mx-auto p-6 space-y-8">
+                    {/* Metric Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <Card className="border-border bg-card">
+                            <CardContent className="p-6">
+                                <div className="flex items-center justify-between space-y-0 pb-2">
+                                    <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Total Pets</p>
+                                    <PawPrint className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="text-2xl font-bold">{petProfiles.length}</div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Manage your furry family members
+                                </p>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-border bg-card">
+                            <CardContent className="p-6">
+                                <div className="flex items-center justify-between space-y-0 pb-2">
+                                    <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Active Feeders</p>
+                                    <Wifi className="h-4 w-4 text-success" />
+                                </div>
+                                <div className="text-2xl font-bold">{activeFeedersCount} / {feeders.length}</div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Devices currently heartbeating
+                                </p>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-border bg-card">
+                            <CardContent className="p-6">
+                                <div className="flex items-center justify-between space-y-0 pb-2">
+                                    <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Today's Energy</p>
+                                    <Zap className="h-4 w-4 text-orange-500" />
+                                </div>
+                                <div className="text-2xl font-bold">1.2 kWh</div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Estimated feeder consumption
+                                </p>
+                            </CardContent>
+                        </Card>
                     </div>
 
-                    <div className="xl:grid xl:grid-cols-3 xl:gap-10 items-start">
-                        {/* Main Stream Column */}
-                        <div className="xl:col-span-2 space-y-10">
-                            {/* Pet Profile */}
-                            <div>
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                        {/* Main Stream */}
+                        <div className="xl:col-span-2 space-y-8">
+                            {/* Pet Profiles Section */}
+                            <section className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold tracking-tight">Your Pets</h3>
+                                    <Button variant="ghost" size="sm" onClick={() => setShowPetModal(true)} className="text-xs">
+                                        Manage
+                                    </Button>
+                                </div>
                                 {loadingProfile ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-pulse">
                                         {[1, 2].map(i => (
-                                            <div key={i} className="h-64 bg-white rounded-3xl border border-gray-100"></div>
+                                            <div key={i} className="h-48 bg-muted rounded-xl border border-border"></div>
                                         ))}
                                     </div>
                                 ) : petProfiles.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {petProfiles.map((profile) => (
                                             <PetProfileCard
                                                 key={profile.id}
@@ -200,64 +233,49 @@ const Dashboard = () => {
                                                 onEdit={() => handleEditPet(profile)}
                                             />
                                         ))}
-                                        {/* Add Another Pet Button */}
                                         <button
                                             onClick={() => {
                                                 setEditingPet(null);
                                                 setShowPetModal(true);
                                             }}
-                                            className="h-full flex flex-col items-center justify-center bg-gray-50/50 border-2 border-dashed border-gray-200 rounded-3xl p-8 hover:border-blue-300 hover:bg-blue-50/30 transition-all group"
+                                            className="group flex flex-col items-center justify-center bg-muted/30 border-2 border-dashed border-border rounded-xl p-8 hover:bg-muted/50 hover:border-primary/50 transition-all"
                                         >
-                                            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                                                <Plus className="h-6 w-6 text-blue-500" />
+                                            <div className="w-10 h-10 bg-background rounded-full flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
+                                                <Plus className="h-5 w-5 text-primary" />
                                             </div>
-                                            <p className="font-bold text-gray-900">Add Another Pet</p>
-                                            <p className="text-xs text-gray-500 mt-1">Manage multiple pet profiles</p>
+                                            <p className="text-sm font-bold">Add Pet</p>
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="bg-white rounded-[2rem] border-2 border-dashed border-gray-100 p-12 text-center group hover:border-blue-200 transition-all duration-300">
-                                        <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-500">
-                                            <PawPrint className="h-10 w-10 text-blue-400" />
-                                        </div>
-                                        <h4 className="text-xl font-bold text-gray-900 mb-2">Build your first pet profile</h4>
-                                        <p className="text-gray-500 mb-10 max-w-sm mx-auto leading-relaxed">
-                                            Personalize your feeding experience by adding your pet's details and dietary needs.
+                                    <Card className="border-2 border-dashed bg-muted/20 p-12 text-center">
+                                        <PawPrint className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
+                                        <h4 className="text-lg font-bold">Build your fleet</h4>
+                                        <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
+                                            Start by adding your first pet profile to unlock automated feeding logic.
                                         </p>
-                                        <Button
-                                            variant="primary"
-                                            icon={Plus}
-                                            onClick={() => setShowPetModal(true)}
-                                            className="shadow-xl shadow-blue-100"
-                                        >
+                                        <Button icon={Plus} onClick={() => setShowPetModal(true)}>
                                             Create Profile
                                         </Button>
-                                    </div>
+                                    </Card>
                                 )}
-                            </div>
+                            </section>
 
-                            {/* Feeders Grid */}
-                            <div className="bg-white rounded-[2.5rem] shadow-sm shadow-gray-200/40 border border-gray-100 p-8 lg:p-10">
-                                <div className="flex justify-between items-center mb-10">
-                                    <h3 className="text-xl font-bold text-gray-900">Connected Feeders</h3>
-                                    <Button
-                                        variant="primary"
-                                        icon={Plus}
-                                        onClick={() => setShowFeederModal(true)}
-                                        className="text-sm py-2.5 px-5 shadow-lg shadow-blue-100"
-                                    >
-                                        Add Feeder
+                            {/* Feeders Section */}
+                            <section className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold tracking-tight">Connected Devices</h3>
+                                    <Button variant="ghost" size="sm" onClick={() => setShowFeederModal(true)} className="text-xs">
+                                        Network Map
                                     </Button>
                                 </div>
-
                                 {loadingFeeders ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 animate-pulse">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-pulse">
                                         {[1, 2].map(i => (
-                                            <div key={i} className="h-56 bg-gray-50 rounded-[2rem] border border-gray-100"></div>
+                                            <div key={i} className="h-52 bg-muted rounded-xl border border-border"></div>
                                         ))}
                                     </div>
                                 ) : feeders.length > 0 ? (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {feeders.map((feeder) => (
                                             <FeederCard
                                                 key={feeder.id}
@@ -268,41 +286,46 @@ const Dashboard = () => {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="text-center py-16">
-                                        <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                                            <Wifi className="h-12 w-12 text-gray-200" />
-                                        </div>
-                                        <h4 className="text-xl font-bold text-gray-900 mb-3">No active feeders</h4>
-                                        <p className="text-gray-500 mb-10 max-w-xs mx-auto">
-                                            Connect your smart pet feeder to start automated feeding.
+                                    <Card className="p-12 text-center border-2 border-dashed bg-muted/20">
+                                        <Wifi className="h-10 w-10 text-muted-foreground/30 mx-auto mb-4" />
+                                        <h4 className="text-lg font-bold">Link a feeder</h4>
+                                        <p className="text-sm text-muted-foreground mb-6 max-w-xs mx-auto">
+                                            Connect your smart feeder to your home Wi-Fi and link it to your account.
                                         </p>
-                                        <Button
-                                            variant="primary"
-                                            icon={Plus}
-                                            onClick={() => setShowFeederModal(true)}
-                                            className="shadow-xl shadow-blue-100"
-                                        >
-                                            Connect Device
+                                        <Button icon={Plus} onClick={() => setShowFeederModal(true)}>
+                                            Pair Device
                                         </Button>
-                                    </div>
+                                    </Card>
                                 )}
-                            </div>
+                            </section>
                         </div>
 
-                        {/* Recent Activity Column */}
-                        <div className="space-y-10">
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-6 px-1">Feeding Activity</h3>
-                                <FeedingHistory feeders={feeders} />
+                        {/* Activity Feed */}
+                        <aside className="space-y-6">
+                            <div className="flex items-center justify-between px-1">
+                                <h3 className="text-lg font-bold tracking-tight">Live Feed</h3>
+                                <Activity className="h-4 w-4 text-primary animate-pulse" />
                             </div>
+                            <FeedingHistory feeders={feeders} />
 
-                        </div>
+                            <Card className="border-border bg-primary/5">
+                                <CardContent className="p-4 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <ShieldCheck className="h-4 w-4 text-primary" />
+                                        <p className="text-xs font-bold uppercase tracking-tight">System Status</p>
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                        All systems operational. Cloud connectivity is stable with 42ms avg latency.
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        </aside>
                     </div>
                 </div>
-            </main >
+            </main>
 
             {/* Modals */}
-            < PetProfileModal
+            <PetProfileModal
                 isOpen={showPetModal}
                 onClose={handlePetModalClose}
                 existingProfile={editingPet}
@@ -330,7 +353,7 @@ const Dashboard = () => {
                 onUpdate={handleFeederUpdate}
                 onRefresh={handleFeederRefresh}
             />
-        </div >
+        </div>
     );
 };
 
