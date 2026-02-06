@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X, Settings, Trash2, Save, Loader2, AlertTriangle } from 'lucide-react';
+import { X, Settings, Trash2, Save, Loader2, AlertTriangle, Dog, Cpu, Wifi, WifiOff } from 'lucide-react';
 import Button from './Button';
 import Input from './Input';
 import { updateDevice, deleteDevice } from '../services/deviceService';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
+import { cn } from '@/lib/utils';
 
 const ManageFeederModal = ({ isOpen, onClose, feeder, petProfiles = [], onUpdate, onRefresh }) => {
     const [name, setName] = useState('');
@@ -23,18 +25,14 @@ const ManageFeederModal = ({ isOpen, onClose, feeder, petProfiles = [], onUpdate
     const handleSave = async (e) => {
         e.preventDefault();
         if (!name.trim()) return;
-
         setLoading(true);
         setError(null);
-
         try {
             const { error: updateError } = await updateDevice(feeder.id, {
                 device_name: name.trim(),
                 pet_id: petId
             });
-
             if (updateError) throw new Error(updateError);
-
             onUpdate(true);
             onClose();
         } catch (err) {
@@ -47,11 +45,9 @@ const ManageFeederModal = ({ isOpen, onClose, feeder, petProfiles = [], onUpdate
     const handleDelete = async () => {
         setDeleting(true);
         setError(null);
-
         try {
             const { error: deleteError } = await deleteDevice(feeder.id);
             if (deleteError) throw new Error(deleteError);
-
             onUpdate(true);
             onClose();
         } catch (err) {
@@ -63,76 +59,78 @@ const ManageFeederModal = ({ isOpen, onClose, feeder, petProfiles = [], onUpdate
 
     if (!isOpen) return null;
 
+    const isOnline = feeder.status?.toLowerCase() === 'online';
+
     return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
-                {/* Header */}
-                <div className="bg-gray-100 px-6 py-4 flex justify-between items-center border-b border-gray-200">
-                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                        <Settings className="h-5 w-5 text-gray-500" />
-                        Feeder Settings
-                    </h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-                        <X className="h-6 w-6" />
-                    </button>
-                </div>
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+            <Card className="max-w-md w-full shadow-2xl border-border animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+                <CardHeader className="border-b border-border bg-muted/30 px-6 py-4 flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle className="text-xl font-bold tracking-tight flex items-center gap-2">
+                            Feeder Settings
+                        </CardTitle>
+                        <CardDescription className="text-xs uppercase font-bold tracking-widest mt-1">
+                            Configuration & hardware control
+                        </CardDescription>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onClose}>
+                        <X className="h-4 w-4" />
+                    </Button>
+                </CardHeader>
 
                 <div className="p-6">
                     {error && (
-                        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 text-destructive rounded-md text-[11px] font-bold text-center">
                             {error}
                         </div>
                     )}
 
                     {!showDeleteConfirm ? (
                         <form onSubmit={handleSave} className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Feeder Name
-                                </label>
+                            <div className="space-y-4">
                                 <Input
+                                    label="Custom Nickname"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    placeholder="Enter feeder name (e.g., Living Room)"
+                                    placeholder="e.g. Master Feeder 1"
+                                    icon={Cpu}
                                     required
                                 />
-                            </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Assigned Pet
-                                </label>
-                                <select
-                                    value={petId}
-                                    onChange={(e) => setPetId(e.target.value)}
-                                    className="block w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                                    required
-                                >
-                                    <option value="" disabled>Select a pet</option>
-                                    {petProfiles.map(pet => (
-                                        <option key={pet.id} value={pet.id}>{pet.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Simulator Section */}
-                            <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h4 className="text-sm font-bold text-orange-800 flex items-center gap-1">
-                                        <AlertTriangle className="h-4 w-4" />
-                                        Simulator Mode
-                                    </h4>
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${feeder.status?.toLowerCase() === 'online' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-700'
-                                        }`}>
-                                        Current: {feeder.status || 'OFFLINE'}
-                                    </span>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium leading-none">Pet Assignment</label>
+                                    <select
+                                        value={petId}
+                                        onChange={(e) => setPetId(e.target.value)}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        required
+                                    >
+                                        <option value="" disabled>Select a pet member</option>
+                                        {petProfiles.map(pet => (
+                                            <option key={pet.id} value={pet.id}>{pet.name}</option>
+                                        ))}
+                                    </select>
                                 </div>
-                                <p className="text-xs text-orange-700 mb-4 font-medium italic">
-                                    Manually toggle device status for testing UI states.
-                                </p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button
+                            </div>
+
+                            {/* Simulation / Debug */}
+                            <div className="p-4 border border-border rounded-xl bg-muted/30 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Network Status</h4>
+                                    <div className={cn(
+                                        "px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1",
+                                        isOnline ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
+                                    )}>
+                                        {isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+                                        {isOnline ? 'ONLINE' : 'OFFLINE'}
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Button
                                         type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-[10px] font-bold h-8"
                                         disabled={toggling}
                                         onClick={async () => {
                                             setToggling(true);
@@ -140,15 +138,14 @@ const ManageFeederModal = ({ isOpen, onClose, feeder, petProfiles = [], onUpdate
                                             await onRefresh();
                                             setToggling(false);
                                         }}
-                                        className={`py-2 text-xs font-bold rounded-lg border transition-all disabled:opacity-50 ${feeder.status?.toLowerCase() === 'online'
-                                            ? 'bg-green-600 text-white border-green-600'
-                                            : 'bg-white text-green-700 border-green-200 hover:bg-green-50'
-                                            }`}
                                     >
-                                        {toggling ? 'Updating...' : 'Force ONLINE'}
-                                    </button>
-                                    <button
+                                        Sync Online
+                                    </Button>
+                                    <Button
                                         type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="text-[10px] font-bold h-8"
                                         disabled={toggling}
                                         onClick={async () => {
                                             setToggling(true);
@@ -156,67 +153,47 @@ const ManageFeederModal = ({ isOpen, onClose, feeder, petProfiles = [], onUpdate
                                             await onRefresh();
                                             setToggling(false);
                                         }}
-                                        className={`py-2 text-xs font-bold rounded-lg border transition-all disabled:opacity-50 ${feeder.status !== 'ONLINE'
-                                            ? 'bg-gray-700 text-white border-gray-700'
-                                            : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                                            }`}
                                     >
-                                        {toggling ? 'Updating...' : 'Force OFFLINE'}
-                                    </button>
+                                        Drop Offline
+                                    </Button>
                                 </div>
                             </div>
 
-                            <div className="pt-4 border-t border-gray-100 flex flex-col gap-3">
-                                <Button
-                                    type="submit"
-                                    variant="primary"
-                                    className="w-full"
-                                    loading={loading}
-                                >
+                            <div className="pt-4 border-t border-border flex flex-col gap-2">
+                                <Button type="submit" loading={loading} className="w-full">
                                     <Save className="h-4 w-4 mr-2" />
-                                    Save Changes
+                                    Update Configuration
                                 </Button>
-
-                                <button
+                                <Button
                                     type="button"
+                                    variant="outline"
+                                    className="w-full border-destructive/30 text-destructive hover:bg-destructive/10"
                                     onClick={() => setShowDeleteConfirm(true)}
-                                    className="w-full py-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors border border-transparent hover:border-red-100"
                                 >
-                                    <Trash2 className="h-4 w-4 inline mr-2" />
-                                    Disconnect Feeder
-                                </button>
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Disconnect Device
+                                </Button>
                             </div>
                         </form>
                     ) : (
-                        <div className="text-center py-4">
-                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <AlertTriangle className="h-8 w-8 text-red-600" />
+                        <div className="text-center py-4 space-y-4">
+                            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+                                <AlertTriangle className="h-8 w-8 text-destructive" />
                             </div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-2">Remove Feeder?</h3>
-                            <p className="text-gray-600 mb-6 text-sm">
-                                This will disconnect the device from your account. You will need the Pairing Code to add it again.
-                            </p>
-                            <div className="flex gap-3">
-                                <Button
-                                    variant="secondary"
-                                    className="flex-1"
-                                    onClick={() => setShowDeleteConfirm(false)}
-                                    disabled={deleting}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    className="flex-1 bg-red-600 hover:bg-red-700 text-white"
-                                    onClick={handleDelete}
-                                    loading={deleting}
-                                >
-                                    Yes, Disconnect
-                                </Button>
+                            <div>
+                                <h3 className="text-lg font-bold text-foreground">Remove Feeder?</h3>
+                                <p className="text-xs text-muted-foreground mt-1 px-6">
+                                    This will unpair the device from your account. You will need the pairing code to re-link it.
+                                </p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="outline" className="flex-1" onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>Keep Linked</Button>
+                                <Button className="flex-1 bg-destructive hover:bg-destructive/90 text-white" onClick={handleDelete} loading={deleting}>Yes, Remove</Button>
                             </div>
                         </div>
                     )}
                 </div>
-            </div>
+            </Card>
         </div>
     );
 };
