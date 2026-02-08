@@ -74,29 +74,42 @@ const ScheduleWorker = () => {
                 if (!schedule.days_of_week.includes(currentDay)) continue;
 
                 for (const feeding of schedule.feeding_times) {
-                    const timeMatch = feeding.time === currentTime;
+                    // Check if currentTime is exactly the same OR if we're within a 30m "catch-up" window
+                    // This handles cases where the app was opened slightly after the scheduled time
+                    const [feedH, feedM] = feeding.time.split(':').map(Number);
+                    const [currH, currM] = currentTime.split(':').map(Number);
 
-                    if (timeMatch) {
+                    const feedTotalMin = feedH * 60 + feedM;
+                    const currTotalMin = currH * 60 + currM;
+
+                    // Trigger if it's the exact minute OR if we're up to 30 mins late
+                    const isWithinWindow = (currTotalMin >= feedTotalMin) && (currTotalMin < feedTotalMin + 30);
+
+                    if (isWithinWindow) {
                         const feedingId = `${schedule.id}_${feeding.time}`;
 
                         // Check if already processed today
                         if (processed[feedingId] === todayDate) {
-                            console.log(`[Worker] Avoiding duplicate feed for ${schedule.name} at ${feeding.time}`);
+                            // Only log once per session to avoid console spam
                             continue;
                         }
 
-                        console.log(`[Worker] 🚀 Triggering schedule: ${schedule.name} (${feeding.time})`);
+                        console.log(`[Worker] 🚀 Triggering schedule: ${schedule.name} (${feeding.time}) - Catch-up: ${currTotalMin - feedTotalMin}m late`);
 
                         // Queue the command
-                        await queueFeedCommand(
-                            schedule.device_id,
-                            feeding.portion_grams,
-                            schedule.pet_id
-                        );
+                        try {
+                            await queueFeedCommand(
+                                schedule.device_id,
+                                feeding.portion_grams,
+                                schedule.pet_id
+                            );
 
-                        // Mark as processed centrally for today
-                        processed[feedingId] = todayDate;
-                        localStorage.setItem(processedKey, JSON.stringify(processed));
+                            // Mark as processed centrally for today
+                            processed[feedingId] = todayDate;
+                            localStorage.setItem(processedKey, JSON.stringify(processed));
+                        } catch (cmdErr) {
+                            console.error('[Worker] Command failed:', cmdErr);
+                        }
                     }
                 }
             }

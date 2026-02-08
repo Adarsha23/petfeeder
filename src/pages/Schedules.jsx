@@ -141,11 +141,11 @@ const Schedules = () => {
                                     "border-border group transition-all",
                                     !schedule.is_active && "opacity-60 bg-muted/30"
                                 )}>
-                                    <div className="absolute top-4 right-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button variant="outline" size="sm" className="h-8 w-8 p-0" onClick={() => { setEditingSchedule(schedule); setShowModal(true); }}>
+                                    <div className="absolute top-4 right-4 flex items-center gap-1">
+                                        <Button variant="outline" size="sm" className="h-8 w-8 p-0 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => { setEditingSchedule(schedule); setShowModal(true); }}>
                                             <Edit2 className="h-3.5 w-3.5" />
                                         </Button>
-                                        <Button variant="outline" size="sm" className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(schedule.id)}>
+                                        <Button variant="outline" size="sm" className="h-8 w-8 p-0 text-destructive bg-background/50 backdrop-blur-sm border-border/50 hover:bg-destructive/10 transition-colors" onClick={() => handleDelete(schedule.id)}>
                                             <Trash2 className="h-3.5 w-3.5" />
                                         </Button>
                                     </div>

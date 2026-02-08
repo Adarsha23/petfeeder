@@ -168,7 +168,7 @@ const Dashboard = () => {
 
                 <div className="max-w-7xl mx-auto p-6 space-y-8">
                     {/* Metric Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Card className="border-border bg-card">
                             <CardContent className="p-6">
                                 <div className="flex items-center justify-between space-y-0 pb-2">
@@ -190,18 +190,6 @@ const Dashboard = () => {
                                 <div className="text-2xl font-bold">{activeFeedersCount} / {feeders.length}</div>
                                 <p className="text-xs text-muted-foreground mt-1">
                                     Devices currently heartbeating
-                                </p>
-                            </CardContent>
-                        </Card>
-                        <Card className="border-border bg-card">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between space-y-0 pb-2">
-                                    <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Today's Energy</p>
-                                    <Zap className="h-4 w-4 text-orange-500" />
-                                </div>
-                                <div className="text-2xl font-bold">1.2 kWh</div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Estimated feeder consumption
                                 </p>
                             </CardContent>
                         </Card>
@@ -264,8 +252,13 @@ const Dashboard = () => {
                             <section className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-lg font-bold tracking-tight">Connected Devices</h3>
-                                    <Button variant="ghost" size="sm" onClick={() => setShowFeederModal(true)} className="text-xs">
-                                        Network Map
+                                    <Button
+                                        variant="default"
+                                        size="sm"
+                                        onClick={() => setShowFeederModal(true)}
+                                        className="text-xs h-8 px-4 font-bold uppercase tracking-wider"
+                                    >
+                                        Add Feeder
                                     </Button>
                                 </div>
                                 {loadingFeeders ? (
@@ -307,18 +300,6 @@ const Dashboard = () => {
                                 <Activity className="h-4 w-4 text-primary animate-pulse" />
                             </div>
                             <FeedingHistory feeders={feeders} />
-
-                            <Card className="border-border bg-primary/5">
-                                <CardContent className="p-4 space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <ShieldCheck className="h-4 w-4 text-primary" />
-                                        <p className="text-xs font-bold uppercase tracking-tight">System Status</p>
-                                    </div>
-                                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                                        All systems operational. Cloud connectivity is stable with 42ms avg latency.
-                                    </p>
-                                </CardContent>
-                            </Card>
                         </aside>
                     </div>
                 </div>

@@ -27,14 +27,11 @@ const FeedingHistory = ({ feeders }) => {
             let endDate = null;
 
             if (filter === 'today') {
-                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-            } else if (filter === 'yesterday') {
-                const yesterday = new Date(now);
-                yesterday.setDate(now.getDate() - 1);
-                startDate = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()).toISOString();
-                endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+                const dayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+                startDate = dayAgo.toISOString();
             } else if (filter === 'month') {
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+                const monthAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+                startDate = monthAgo.toISOString();
             }
 
             const allEvents = [];
