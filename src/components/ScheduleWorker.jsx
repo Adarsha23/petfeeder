@@ -41,8 +41,8 @@ const ScheduleWorker = () => {
                     console.error('[Worker Lock Error]:', err);
                 }
 
-                // Wait 60s before trying to become master again
-                await new Promise(resolve => setTimeout(resolve, 60000));
+                // Wait 3s before trying to become master again (faster response time)
+                await new Promise(resolve => setTimeout(resolve, 3000));
             }
         };
 
@@ -58,7 +58,11 @@ const ScheduleWorker = () => {
             const now = new Date();
             const currentDay = now.getDay(); // 0-6 (Sun-Sat)
             const currentTime = now.toTimeString().substring(0, 5); // "HH:mm"
+            const currentTimeWithSeconds = now.toTimeString().substring(0, 8); // "HH:mm:ss"
             const todayDate = now.toISOString().split('T')[0]; // "YYYY-MM-DD"
+
+            // Debug logging
+            console.log(`[Worker] 🕐 Checking schedules at ${currentTimeWithSeconds} (Day: ${currentDay})`);
 
             // Get processed feedings from localStorage
             const processedKey = `processed_feedings_${user.id}`;
@@ -68,10 +72,16 @@ const ScheduleWorker = () => {
             if (error) throw error;
 
             const activeSchedules = schedules.filter(s => s.is_active);
+            console.log(`[Worker] 📋 Found ${activeSchedules.length} active schedules`);
 
             for (const schedule of activeSchedules) {
                 // Check if today matches schedule days
-                if (!schedule.days_of_week.includes(currentDay)) continue;
+                if (!schedule.days_of_week.includes(currentDay)) {
+                    console.log(`[Worker] ⏭️  Skipping "${schedule.name}" - not scheduled for day ${currentDay}`);
+                    continue;
+                }
+
+                console.log(`[Worker] ✓ Checking "${schedule.name}" - ${schedule.feeding_times.length} feeding times`);
 
                 for (const feeding of schedule.feeding_times) {
                     // Check if currentTime is exactly the same OR if we're within a 30m "catch-up" window
@@ -85,16 +95,18 @@ const ScheduleWorker = () => {
                     // Trigger if it's the exact minute OR if we're up to 30 mins late
                     const isWithinWindow = (currTotalMin >= feedTotalMin) && (currTotalMin < feedTotalMin + 30);
 
+                    console.log(`[Worker]   ⏰ Time ${feeding.time}: feedMin=${feedTotalMin}, currMin=${currTotalMin}, diff=${currTotalMin - feedTotalMin}m, inWindow=${isWithinWindow}`);
+
                     if (isWithinWindow) {
                         const feedingId = `${schedule.id}_${feeding.time}`;
 
                         // Check if already processed today
                         if (processed[feedingId] === todayDate) {
-                            // Only log once per session to avoid console spam
+                            console.log(`[Worker]   ⏭️  Already processed today: ${feedingId}`);
                             continue;
                         }
 
-                        console.log(`[Worker] 🚀 Triggering schedule: ${schedule.name} (${feeding.time}) - Catch-up: ${currTotalMin - feedTotalMin}m late`);
+                        console.log(`[Worker] 🚀 TRIGGERING: ${schedule.name} (${feeding.time}) - ${currTotalMin - feedTotalMin}m late`);
 
                         // Queue the command
                         try {
@@ -107,8 +119,9 @@ const ScheduleWorker = () => {
                             // Mark as processed centrally for today
                             processed[feedingId] = todayDate;
                             localStorage.setItem(processedKey, JSON.stringify(processed));
+                            console.log(`[Worker] ✅ Successfully queued feed command for ${schedule.name}`);
                         } catch (cmdErr) {
-                            console.error('[Worker] Command failed:', cmdErr);
+                            console.error('[Worker] ❌ Command failed:', cmdErr);
                         }
                     }
                 }

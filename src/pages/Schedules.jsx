@@ -30,6 +30,15 @@ const Schedules = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [pets, setPets] = useState([]);
     const [devices, setDevices] = useState([]);
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    // Update current time every second
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     useEffect(() => {
         loadData();
@@ -103,7 +112,12 @@ const Schedules = () => {
                             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 text-muted-foreground hover:text-foreground">
                                 <Menu className="h-5 w-5" />
                             </button>
-                            <h1 className="text-xl font-bold tracking-tight text-foreground">Feeding Routines</h1>
+                            <div>
+                                <h1 className="text-xl font-bold tracking-tight text-foreground">Feeding Routines</h1>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Current Time: {currentTime.toTimeString().substring(0, 8)} (Day {currentTime.getDay()})
+                                </p>
+                            </div>
                         </div>
                         <Button
                             variant="default"
@@ -138,10 +152,10 @@ const Schedules = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {schedules.map((schedule) => (
                                 <Card key={schedule.id} className={cn(
-                                    "border-border group transition-all",
+                                    "relative border-border group transition-all",
                                     !schedule.is_active && "opacity-60 bg-muted/30"
                                 )}>
-                                    <div className="absolute top-4 right-4 flex items-center gap-1">
+                                    <div className="absolute top-4 right-4 flex items-center gap-1 z-10">
                                         <Button variant="outline" size="sm" className="h-8 w-8 p-0 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => { setEditingSchedule(schedule); setShowModal(true); }}>
                                             <Edit2 className="h-3.5 w-3.5" />
                                         </Button>
