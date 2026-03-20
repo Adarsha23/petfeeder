@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Clock, CheckCircle2, XCircle, Loader2, Info } from 'lucide-react';
+import { Clock, CheckCircle2, XCircle, Loader2, Info, Zap } from 'lucide-react';
 import { getFeedingEvents } from '../services/feedingService';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
 import { cn } from '@/lib/utils';
+import { supabase } from '../lib/supabase';
 import Button from './Button';
 
 const FeedingHistory = ({ feeders }) => {
@@ -24,32 +25,85 @@ const FeedingHistory = ({ feeders }) => {
         try {
             const now = new Date();
             let startDate = null;
-            let endDate = null;
 
             if (filter === 'today') {
-                const dayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
-                startDate = dayAgo.toISOString();
+                startDate = new Date(now.getTime() - (24 * 60 * 60 * 1000)).toISOString();
             } else if (filter === 'month') {
-                const monthAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
-                startDate = monthAgo.toISOString();
+                startDate = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)).toISOString();
             }
 
+            // Fetch from command_queue (more reliable - has actual status from ESP32)
+            let query = supabase
+                .from('command_queue')
+                .select('*')
+                .eq('command_type', 'FEED')
+                .order('created_at', { ascending: false })
+                .limit(filter === 'all' ? 50 : 20);
+
+            if (startDate) {
+                query = query.gte('created_at', startDate);
+            }
+
+            // Filter by device IDs
+            const deviceIds = feeders.map(f => f.id);
+            if (deviceIds.length > 0) {
+                query = query.in('device_id', deviceIds);
+            }
+
+            const { data: cmdData, error: cmdError } = await query;
+
+            if (cmdError) throw cmdError;
+
+            // Map command_queue to display format
+            const mapped = (cmdData || []).map(cmd => {
+                const feeder = feeders.find(f => f.id === cmd.device_id);
+                return {
+                    id: cmd.id,
+                    timestamp: cmd.created_at,
+                    actual_grams: cmd.payload?.grams || cmd.payload?.target_grams || 0,
+                    target_grams: cmd.payload?.target_grams || cmd.payload?.grams || 0,
+                    status: cmd.status === 'EXECUTED' ? 'SUCCESS' : cmd.status,
+                    feederName: feeder?.device_name || feeder?.name || 'Feeder',
+                    pet_profiles: null,
+                };
+            });
+
+            // Also try to get feeding_events for pet name info
             const allEvents = [];
             for (const feeder of feeders) {
-                const { data, error: fetchError } = await getFeedingEvents(
+                const { data } = await getFeedingEvents(
                     feeder.id,
                     filter === 'all' ? 50 : 20,
                     startDate,
-                    endDate
+                    null
                 );
-                if (fetchError) throw new Error(fetchError);
                 if (data) {
-                    allEvents.push(...data.map(event => ({ ...event, feederName: feeder.device_name || feeder.name })));
+                    allEvents.push(...data.map(event => ({
+                        ...event,
+                        feederName: feeder.device_name || feeder.name,
+                        // Use EXECUTED from command_queue if the feeding_event is still PENDING
+                        status: event.status === 'PENDING' ? 'PENDING' : event.status,
+                    })));
                 }
             }
 
-            allEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            setEvents(filter === 'all' ? allEvents : allEvents.slice(0, 20));
+            // Merge: prefer command_queue data (has real status), enrich with pet info from feeding_events
+            const enrichedMapped = mapped.map(cmd => {
+                const matchingEvent = allEvents.find(e =>
+                    e.device_id === feeders.find(f => f.device_name === cmd.feederName || f.name === cmd.feederName)?.id &&
+                    Math.abs(new Date(e.timestamp) - new Date(cmd.timestamp)) < 10000
+                );
+                return {
+                    ...cmd,
+                    pet_profiles: matchingEvent?.pet_profiles || null,
+                    status: cmd.status === 'SUCCESS' ? 'SUCCESS' : cmd.status,
+                };
+            });
+
+            // Use enriched command_queue data if available, fallback to feeding_events
+            const finalEvents = enrichedMapped.length > 0 ? enrichedMapped : allEvents;
+            finalEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            setEvents(finalEvents.slice(0, filter === 'all' ? 50 : 20));
         } catch (err) {
             console.error('Failed to load feeding history:', err);
             setError('Could not load activity');

@@ -12,6 +12,7 @@ import VerifyEmail from './pages/VerifyEmail'
 import Dashboard from './pages/Dashboard'
 import Schedules from './pages/Schedules'
 import Analytics from './pages/Analytics'
+import Settings from './pages/Settings'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -44,6 +45,14 @@ createRoot(document.getElementById('root')).render(
             element={
               <ProtectedRoute>
                 <Analytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             }
           />

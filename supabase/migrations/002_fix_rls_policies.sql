@@ -1,38 +1,4 @@
--- Fix for infinite recursion in RLS policies
--- Run this in Supabase SQL Editor
 
--- Drop ALL existing policies to start fresh
-DROP POLICY IF EXISTS "Users can view their own devices" ON devices;
-DROP POLICY IF EXISTS "Users can insert their own devices" ON devices;
-DROP POLICY IF EXISTS "Users can update their own devices" ON devices;
-DROP POLICY IF EXISTS "Users can delete their own devices" ON devices;
-
-DROP POLICY IF EXISTS "Users can view their own pet profiles" ON pet_profiles;
-DROP POLICY IF EXISTS "Users can insert their own pet profiles" ON pet_profiles;
-DROP POLICY IF EXISTS "Users can update their own pet profiles" ON pet_profiles;
-DROP POLICY IF EXISTS "Users can delete their own pet profiles" ON pet_profiles;
-
-DROP POLICY IF EXISTS "Users can view feeding events for their devices" ON feeding_events;
-DROP POLICY IF EXISTS "Users can insert feeding events for their devices" ON feeding_events;
-
-DROP POLICY IF EXISTS "Users can view commands for their devices" ON command_queue;
-DROP POLICY IF EXISTS "Users can insert commands for their devices" ON command_queue;
-DROP POLICY IF EXISTS "Users can update commands for their devices" ON command_queue;
-DROP POLICY IF EXISTS "Users can delete commands for their devices" ON command_queue;
-
-DROP POLICY IF EXISTS "Users can view notifications for their devices" ON notifications;
-DROP POLICY IF EXISTS "Users can insert notifications" ON notifications;
-DROP POLICY IF EXISTS "Users can update their notifications" ON notifications;
-DROP POLICY IF EXISTS "Users can delete their notifications" ON notifications;
-
-DROP POLICY IF EXISTS "Users can view sensor data for their devices" ON device_sensors;
-DROP POLICY IF EXISTS "Users can insert sensor data for their devices" ON device_sensors;
-
-DROP POLICY IF EXISTS "Users can view shared access for their devices" ON device_shared_access;
-DROP POLICY IF EXISTS "Device owners can manage shared access" ON device_shared_access;
-DROP POLICY IF EXISTS "Users can manage shared access" ON device_shared_access;
-
--- Recreate SIMPLE policies without recursion
 
 -- Devices: Only check owner_id (no shared access for now)
 CREATE POLICY "Users can view their own devices"

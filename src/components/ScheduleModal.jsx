@@ -1,266 +1,292 @@
 import { useState, useEffect } from 'react';
-import { X, Clock, Calendar, Dog, Info, Plus, Trash2, Layout, Timer, CheckCircle2 } from 'lucide-react';
-import Button from './Button';
-import Input from './Input';
+import { X, Clock, Plus, Trash2, Calendar, AlertCircle } from 'lucide-react';
 import { createSchedule, updateSchedule } from '../services/scheduleService';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
+import Button from './Button';
 import { cn } from '@/lib/utils';
 
-const ScheduleModal = ({ isOpen, onClose, existingSchedule = null, pets = [], devices = [] }) => {
+const ScheduleModal = ({ isOpen, onClose, existingSchedule, devices }) => {
+    const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
         name: '',
         deviceId: '',
-        feedingTimes: [{ time: '08:00', portionGrams: '50' }],
-        daysOfWeek: [1, 2, 3, 4, 5]
+        petId: '',
+        feedingTimes: [
+            { time: '08:00', portionGrams: '50' }
+        ],
+        daysOfWeek: [true, true, true, true, true, true, true], // Sun-Sat
     });
 
-    const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState({});
-
-    const selectedDevice = devices.find(d => d.id === formData.deviceId);
-    const selectedPet = selectedDevice?.pet_id
-        ? pets.find(p => p.id === selectedDevice.pet_id) || selectedDevice.pet
-        : null;
-
-    const dayNames = [
-        { id: 1, label: 'Mon' }, { id: 2, label: 'Tue' }, { id: 3, label: 'Wed' },
-        { id: 4, label: 'Thu' }, { id: 5, label: 'Fri' }, { id: 6, label: 'Sat' }, { id: 0, label: 'Sun' }
-    ];
+    const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     useEffect(() => {
-        if (isOpen) {
-            if (existingSchedule) {
-                setFormData({
-                    name: existingSchedule.name || '',
-                    deviceId: existingSchedule.device_id || '',
-                    feedingTimes: existingSchedule.feeding_times || [{ time: '08:00', portionGrams: '50' }],
-                    daysOfWeek: existingSchedule.days_of_week || []
-                });
-            } else {
-                setFormData({
-                    name: '',
-                    deviceId: devices[0]?.id || '',
-                    feedingTimes: [{ time: '08:00', portionGrams: '50' }],
-                    daysOfWeek: [1, 2, 3, 4, 5]
-                });
-            }
+        if (existingSchedule) {
+            // Map DB snake_case to frontend camelCase
+            // Important: database uses 'portion_grams' in the JSONB payload or specific fields.
+            const mappedTimes = existingSchedule.feeding_times?.map(t => ({
+                time: t.time || '08:00',
+                portionGrams: String(t.portion_grams || t.portionGrams || 50)
+            })) || [{ time: '08:00', portionGrams: '50' }];
+
+            setFormData({
+                name: existingSchedule.name || '',
+                deviceId: existingSchedule.device_id || '',
+                petId: existingSchedule.pet_id || '',
+                feedingTimes: mappedTimes,
+                daysOfWeek: existingSchedule.days_of_week || [true, true, true, true, true, true, true],
+            });
+        } else {
+            setFormData({
+                name: '',
+                deviceId: devices?.[0]?.id || '',
+                petId: devices?.[0]?.pet_id || '',
+                feedingTimes: [{ time: '08:00', portionGrams: '50' }],
+                daysOfWeek: [true, true, true, true, true, true, true],
+            });
         }
+        setErrors({}); // Reset errors when modal opens/changes
     }, [existingSchedule, devices, isOpen]);
+
+    if (!isOpen) return null;
 
     const validate = () => {
         const newErrors = {};
-        if (!formData.name.trim()) newErrors.name = 'Name is required';
-        if (!formData.deviceId) newErrors.deviceId = 'Select a device';
-        if (!selectedDevice?.pet_id) newErrors.deviceId = 'No pet assigned to this device';
-
-        const timeErrors = [];
-        formData.feedingTimes.forEach((ft, index) => {
-            if (!ft.time) timeErrors[index] = { ...timeErrors[index], time: 'Required' };
-            if (!ft.portionGrams || parseInt(ft.portionGrams) <= 0) {
-                timeErrors[index] = { ...timeErrors[index], portion: 'Min 1g' };
-            }
-        });
-        if (timeErrors.length > 0) newErrors.feedingTimes = timeErrors;
-        if (formData.daysOfWeek.length === 0) newErrors.days = 'Select at least one day';
+        if (!formData.name.trim()) newErrors.name = 'Required';
+        if (!formData.deviceId) newErrors.deviceId = 'No device linked';
+        
+        // Find if the device exists or if we have an existing pet association
+        const selectedDevice = devices?.find(d => d.id === formData.deviceId);
+        const petId = selectedDevice?.pet_id || existingSchedule?.pet_id;
+        
+        if (!petId) newErrors.petId = 'No pet assigned to this device';
+        
+        if (formData.feedingTimes.length === 0) newErrors.times = 'At least one feeding required';
+        
+        const hasActiveDay = formData.daysOfWeek.some(day => day);
+        if (!hasActiveDay) newErrors.days = 'Select at least one day';
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         if (!validate()) return;
 
         setLoading(true);
         try {
+            const selectedDevice = devices?.find(d => d.id === formData.deviceId);
+            const petId = selectedDevice?.pet_id || existingSchedule?.pet_id || null;
+
             const payload = {
                 name: formData.name,
-                petId: selectedDevice.pet_id,
                 deviceId: formData.deviceId,
-                feedingTimes: formData.feedingTimes.map(ft => ({
-                    time: ft.time,
-                    portion_grams: parseInt(ft.portionGrams)
+                petId: petId,
+                feedingTimes: formData.feedingTimes.map(t => ({
+                    time: t.time,
+                    portion_grams: parseInt(t.portionGrams) || 50
                 })),
-                daysOfWeek: formData.daysOfWeek
+                daysOfWeek: formData.daysOfWeek,
+                isActive: true
             };
 
             if (existingSchedule) {
-                await updateSchedule(existingSchedule.id, { ...payload, isActive: existingSchedule.is_active });
+                await updateSchedule(existingSchedule.id, payload);
             } else {
                 await createSchedule(payload);
             }
             onClose(true);
         } catch (err) {
-            alert(err.message || 'Failed to save schedule');
+            console.error('Save schedule error:', err);
+            setErrors({ submit: err.message });
         } finally {
             setLoading(false);
         }
     };
 
-    const toggleDay = (dayId) => {
-        setFormData(prev => ({
-            ...prev,
-            daysOfWeek: prev.daysOfWeek.includes(dayId)
-                ? prev.daysOfWeek.filter(d => d !== dayId)
-                : [...prev.daysOfWeek, dayId].sort()
-        }));
+    const toggleDay = (index) => {
+        const newDays = [...formData.daysOfWeek];
+        newDays[index] = !newDays[index];
+        setFormData({ ...formData, daysOfWeek: newDays });
     };
 
-    if (!isOpen) return null;
+    const addTime = () => {
+        setFormData({
+            ...formData,
+            feedingTimes: [...formData.feedingTimes, { time: '12:00', portionGrams: '50' }]
+        });
+    };
+
+    const removeTime = (index) => {
+        setFormData({
+            ...formData,
+            feedingTimes: formData.feedingTimes.filter((_, i) => i !== index)
+        });
+    };
+
+    const updateTime = (index, field, value) => {
+        const newTimes = [...formData.feedingTimes];
+        newTimes[index] = { ...newTimes[index], [field]: value };
+        setFormData({ ...formData, feedingTimes: newTimes });
+    };
 
     return (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-            <Card className="max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border-border animate-in fade-in zoom-in-95 duration-200">
-                <CardHeader className="border-b border-border bg-muted/30 px-6 py-4 flex flex-row items-center justify-between shrink-0">
-                    <div>
-                        <CardTitle className="text-xl font-bold tracking-tight">
-                            {existingSchedule ? 'Edit Routine' : 'New Feeding Plan'}
-                        </CardTitle>
-                        <CardDescription className="text-xs uppercase font-bold tracking-widest leading-none mt-1">
-                            {existingSchedule ? 'Modifying meal schedule' : 'Automate your pet meal times'}
-                        </CardDescription>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-background border border-border w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="px-6 py-4 border-b border-border flex justify-between items-center bg-muted/20">
+                    <div className="flex items-center gap-2">
+                        <Clock className="h-5 w-5 text-primary" />
+                        <h2 className="text-lg font-bold tracking-tight">
+                            {existingSchedule ? 'Edit Routine' : 'Create Automation'}
+                        </h2>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => onClose(false)}>
-                        <X className="h-4 w-4" />
-                    </Button>
-                </CardHeader>
+                    <button onClick={() => onClose()} className="p-2 hover:bg-muted rounded-full transition-colors">
+                        <X className="h-5 w-5" />
+                    </button>
+                </div>
 
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-                    <div className="space-y-4">
-                        <Input
-                            label="Routine Name"
-                            placeholder="e.g. Morning Diet"
+                <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+                    {/* Routine Name */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Label Name</label>
+                        <input
+                            type="text"
+                            placeholder="e.g., Morning Munchies"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            error={errors.name}
-                            icon={Timer}
+                            className={cn(
+                                "w-full h-11 px-4 text-sm border-2 rounded-xl bg-transparent outline-none transition-all",
+                                errors.name ? "border-red-500 bg-red-50/50" : "border-border hover:border-zinc-300 focus:border-primary"
+                            )}
                         />
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium leading-none">Feeder</label>
-                                <select
-                                    value={formData.deviceId}
-                                    onChange={(e) => setFormData({ ...formData, deviceId: e.target.value })}
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                >
-                                    {devices.map(device => (
-                                        <option key={device.id} value={device.id}>{device.device_name}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium leading-none">Target Pet</label>
-                                <div className="h-10 px-3 flex items-center gap-2 rounded-md bg-muted/30 border border-border">
-                                    <Dog className="h-4 w-4 text-primary" />
-                                    <span className="text-sm font-bold truncate">
-                                        {selectedPet?.name || 'Manual'}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                        {errors.name && <p className="text-[10px] text-red-500 font-bold flex items-center gap-1 ml-1 uppercase">{errors.name}</p>}
                     </div>
 
-                    {/* Multi-Time Section */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <label className="text-sm font-bold uppercase tracking-tight flex items-center gap-2">
-                                <Clock className="h-4 w-4 text-primary" /> Meals & Portions
-                            </label>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-8 text-xs gap-1.5"
-                                onClick={() => setFormData(prev => ({ ...prev, feedingTimes: [...prev.feedingTimes, { time: '12:00', portionGrams: '50' }] }))}
-                            >
-                                <Plus className="h-3 w-3" /> Add Meal
-                            </Button>
-                        </div>
-
-                        <div className="space-y-3">
-                            {formData.feedingTimes.map((ft, index) => (
-                                <div key={index} className="flex gap-2 items-end p-3 rounded-lg border border-border bg-muted/20 animate-in slide-in-from-left-2 duration-200">
-                                    <div className="flex-1">
-                                        <Input
-                                            type="time"
-                                            value={ft.time}
-                                            onChange={(e) => {
-                                                const newTimes = [...formData.feedingTimes];
-                                                newTimes[index].time = e.target.value;
-                                                setFormData({ ...formData, feedingTimes: newTimes });
-                                            }}
-                                            className="h-9"
-                                        />
-                                    </div>
-                                    <div className="flex-1">
-                                        <Input
-                                            type="number"
-                                            value={ft.portionGrams}
-                                            onChange={(e) => {
-                                                const newTimes = [...formData.feedingTimes];
-                                                newTimes[index].portionGrams = e.target.value;
-                                                setFormData({ ...formData, feedingTimes: newTimes });
-                                            }}
-                                            placeholder="Grams"
-                                            className="h-9"
-                                        />
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-9 w-9 text-muted-foreground hover:text-destructive shrink-0"
-                                        disabled={formData.feedingTimes.length <= 1}
-                                        onClick={() => setFormData(prev => ({ ...prev, feedingTimes: prev.feedingTimes.filter((_, i) => i !== index) }))}
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                </div>
+                    {/* Device Selection */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Select Hardware Unit</label>
+                        <select
+                            value={formData.deviceId}
+                            onChange={(e) => setFormData({ ...formData, deviceId: e.target.value })}
+                            className={cn(
+                                "w-full h-11 px-4 text-sm border-2 rounded-xl bg-transparent outline-none transition-all appearance-none cursor-pointer",
+                                errors.deviceId ? "border-red-500 bg-red-50/50" : "border-border hover:border-zinc-300 focus:border-primary"
+                            )}
+                        >
+                            <option value="">Select a Feeder</option>
+                            {devices?.map(d => (
+                                <option key={d.id} value={d.id}>{d.device_name || d.serial_number}</option>
                             ))}
-                        </div>
+                        </select>
+                        {errors.deviceId && <p className="text-[10px] text-red-500 font-bold flex items-center gap-1 ml-1 uppercase tracking-wider">{errors.deviceId}</p>}
+                        {errors.petId && !errors.deviceId && <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg flex items-center gap-2 mt-1">
+                            <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
+                            <p className="text-[10px] text-amber-700 font-bold uppercase">{errors.petId}</p>
+                        </div>}
                     </div>
 
-                    {/* Days Selection */}
-                    <div className="space-y-4">
-                        <label className="text-sm font-bold uppercase tracking-tight flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-primary" /> Recurrence Settings
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                            {dayNames.map((day) => (
+                    {/* Schedule (Days) */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Recurring Days</label>
+                        <div className="flex justify-between gap-1">
+                            {dayLabels.map((day, i) => (
                                 <button
-                                    key={day.id}
+                                    key={day}
                                     type="button"
-                                    onClick={() => toggleDay(day.id)}
+                                    onClick={() => toggleDay(i)}
                                     className={cn(
-                                        "h-10 flex-1 min-w-[50px] rounded-md text-xs font-bold transition-all border",
-                                        formData.daysOfWeek.includes(day.id)
-                                            ? "bg-primary border-primary text-primary-foreground shadow-sm"
-                                            : "bg-background border-border text-muted-foreground hover:bg-muted"
+                                        "w-full h-10 text-[10px] font-black rounded-lg border transition-all",
+                                        formData.daysOfWeek[i]
+                                            ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/20"
+                                            : "border-border text-muted-foreground hover:bg-muted"
                                     )}
                                 >
-                                    {day.label}
+                                    {day}
                                 </button>
                             ))}
                         </div>
+                        {errors.days && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.days}</p>}
                     </div>
 
-                    <div className="bg-muted/30 p-4 rounded-lg flex items-start gap-3 border border-border">
-                        <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                            <span className="font-bold text-foreground">Cloud Sync Active:</span> Your feeder will automatically execute these instructions even if your internet connection drops periodically.
-                        </p>
+                    {/* Feeding Slots */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Feeding Events</label>
+                            <button
+                                type="button"
+                                onClick={addTime}
+                                className="text-[10px] font-black uppercase text-primary hover:underline flex items-center gap-1"
+                            >
+                                <Plus className="h-3 w-3" /> Add Slot
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            {formData.feedingTimes.map((item, index) => (
+                                <div key={index} className="flex gap-2 items-end animate-in slide-in-from-top-1 duration-200">
+                                    <div className="flex-1 grid grid-cols-2 gap-2 p-3 bg-muted/30 rounded-xl border border-border">
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-black uppercase text-muted-foreground opacity-60">Time</p>
+                                            <input
+                                                type="time"
+                                                value={item.time}
+                                                onChange={(e) => updateTime(index, 'time', e.target.value)}
+                                                className="w-full h-8 text-xs font-bold bg-transparent border-b border-border focus:border-primary outline-none"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-black uppercase text-muted-foreground opacity-60">Grams</p>
+                                            <div className="flex items-center gap-1">
+                                                <input
+                                                    type="number"
+                                                    value={item.portionGrams}
+                                                    onChange={(e) => updateTime(index, 'portionGrams', e.target.value)}
+                                                    className="w-full h-8 text-xs font-bold bg-transparent border-b border-border focus:border-primary outline-none"
+                                                />
+                                                <span className="text-[10px] font-bold text-muted-foreground">g</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeTime(index)}
+                                        disabled={formData.feedingTimes.length === 1}
+                                        className="h-10 w-10 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-100 disabled:opacity-30 transition-all mb-1 border border-red-100"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {errors.submit && (
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                            <p className="text-xs text-red-600 font-bold">{errors.submit}</p>
+                        </div>
+                    )}
+
+                    <div className="pt-4 flex gap-3">
+                        <Button
+                            variant="outline"
+                            className="flex-1 h-11 text-[11px] font-black uppercase tracking-wider"
+                            onClick={() => onClose()}
+                            type="button"
+                        >
+                            Discard
+                        </Button>
+                        <Button
+                            variant="default"
+                            className="flex-1 h-11 text-[11px] font-black uppercase tracking-wider shadow-lg shadow-primary/20"
+                            loading={loading}
+                            type="submit"
+                        >
+                            {existingSchedule ? 'Save Changes' : 'Enable Bot'}
+                        </Button>
                     </div>
                 </form>
-
-                <CardFooter className="border-t border-border bg-muted/30 px-6 py-4 flex gap-3 shrink-0">
-                    <Button variant="outline" className="flex-1" onClick={() => onClose(false)}>Cancel</Button>
-                    <Button type="submit" className="flex-1" loading={loading} onClick={handleSubmit}>
-                        {existingSchedule ? 'Update Routine' : 'Enable Automation'}
-                    </Button>
-                </CardFooter>
-            </Card>
+            </div>
         </div>
     );
 };

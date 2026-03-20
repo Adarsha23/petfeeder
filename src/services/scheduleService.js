@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 
 /**
- * Schedule Service (Refined)
+ * Schedule Service
  * Handles recurring feeding schedules with multiple times and naming
  */
 
