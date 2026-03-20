@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, PawPrint, Settings, Bell, Plus, Wifi, Menu, Activity, ShieldCheck, Zap } from 'lucide-react';
+import { LogOut, PawPrint, Settings, Bell, Plus, Wifi, Menu, Activity, ShieldCheck, Zap, Droplets, Wheat } from 'lucide-react';
 import { getPetProfiles } from '../services/petProfileService';
 import { getUserDevices } from '../services/deviceService';
 import { queueFeedCommand } from '../services/commandService';
@@ -13,6 +13,7 @@ import FeederCard from '../components/FeederCard';
 import FeedNowModal from '../components/FeedNowModal';
 import FeedingHistory from '../components/FeedingHistory';
 import ManageFeederModal from '../components/ManageFeederModal';
+import SensorGauges from '../components/SensorGauges';
 import Sidebar from '../components/Sidebar';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
 import { cn } from '@/lib/utils';
@@ -145,8 +146,8 @@ const Dashboard = () => {
                                 <Menu className="h-5 w-5" />
                             </button>
                             <div>
-                                <h1 className="text-xl font-bold tracking-tight text-foreground">Dashboard</h1>
-                                <p className="text-xs text-muted-foreground hidden sm:block">Welcome back, {user?.name?.split(' ')[0] || 'User'}</p>
+                                <h1 className="text-xl font-bold tracking-tight text-foreground tracking-tighter uppercase whitespace-nowrap">Dashboard</h1>
+                                <p className="text-xs text-muted-foreground hidden sm:block">Welcome back, {user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -194,6 +195,20 @@ const Dashboard = () => {
                             </CardContent>
                         </Card>
                     </div>
+
+                    {/* Sensor Levels */}
+                    {feeders.length > 0 && (
+                        <section className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold tracking-tight">Sensor Levels</h3>
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <Activity className="h-3.5 w-3.5 animate-pulse text-primary" />
+                                    <span className="font-medium">Live</span>
+                                </div>
+                            </div>
+                            <SensorGauges feeders={feeders} />
+                        </section>
+                    )}
 
                     <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                         {/* Main Stream */}

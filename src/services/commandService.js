@@ -27,6 +27,7 @@ export const queueFeedCommand = async (deviceId, targetGrams, petId = null) => {
                     user_id: user.id,
                     command_type: 'FEED',
                     payload: {
+                        grams: targetGrams,
                         target_grams: targetGrams,
                         pet_id: petId,
                     },
@@ -110,6 +111,38 @@ export const queueResumeCommand = async (deviceId) => {
         return { data, error: null };
     } catch (error) {
         console.error('Queue resume command error:', error);
+        return { data: null, error: error.message };
+    }
+};
+
+// Queue a calibrate (tare) command
+export const queueCalibrateCommand = async (deviceId) => {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        const idempotencyToken = generateIdempotencyToken();
+
+        const { data, error } = await supabase
+            .from('command_queue')
+            .insert([
+                {
+                    device_id: deviceId,
+                    user_id: user.id,
+                    command_type: 'CALIBRATE',
+                    payload: {},
+                    status: 'PENDING',
+                    idempotency_token: idempotencyToken,
+                    priority: 2, // Highest priority
+                },
+            ])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return { data, error: null };
+    } catch (error) {
+        console.error('Queue calibrate command error:', error);
         return { data: null, error: error.message };
     }
 };
