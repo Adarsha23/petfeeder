@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Wifi, QrCode, ShieldCheck, Info, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { registerDevice } from '../services/deviceService';
@@ -17,6 +17,13 @@ const AddFeederModal = ({ isOpen, onClose, petProfiles = [] }) => {
     });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Sync petId when petProfiles are loaded
+    useEffect(() => {
+        if (petProfiles.length > 0 && !formData.petId) {
+            setFormData(prev => ({ ...prev, petId: petProfiles[0].id }));
+        }
+    }, [petProfiles, formData.petId]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
