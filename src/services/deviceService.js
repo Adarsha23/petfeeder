@@ -2,8 +2,10 @@ import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Device Service
- * Handles device registration, management, and status operations
+ * 📡 DEVICE SERVICE
+ * Manages the "Digital Twin" of your hardware. 
+ * This service handles registration (pairing), metadata (names),
+ * and live sensor retrieval (food/water levels).
  */
 
 // Get all devices for current user
@@ -52,13 +54,15 @@ export const getDeviceById = async (deviceId) => {
     }
 };
 
-// Register new device (pair device)
+// 🔗 PAIRING LOGIC (Register a new Feeder)
+// To keep things secure, we don't just send the raw pairing code to the DB.
+// We hash it first (SHA-256) so only the device and the user know the secret.
 export const registerDevice = async (serialNumber, pairingCode, deviceName = null, petId = null) => {
     try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        // Hash the pairing code
+        // 🛡️ SECURITY: Pairing Code Hash
         const pairingCodeHash = await hashPairingCode(pairingCode);
 
         let { data, error } = await supabase
@@ -159,7 +163,10 @@ export const deleteDevice = async (deviceId) => {
     }
 };
 
-// Subscribe to device status changes
+// 📶 REALTIME HEARTBEAT
+// Subscribes to the 'devices' table for a specific ID.
+// Whenever 'last_seen_at' or 'status' changes in the DB (via hardware trigger), 
+// our React dashboard updates instantly.
 export const subscribeToDeviceStatus = (deviceId, callback) => {
     const subscription = supabase
         .channel(`device-${deviceId}`)
