@@ -1,11 +1,14 @@
 import { supabase } from '../lib/supabase';
 
 /**
- * Authentication Service
- * Handles user authentication, session management, and profile operations
+ * AUTHENTICATION SERVICE
+ * This uses Supabase's built-in GoTrue auth system. 
+ * Why? It handles JWT tokens, salted password hashing, and email verification
+ * automatically
  */
 
-// Sign up new user
+// SIGN UP: Creates a new user in the auth.users table.
+// We also store the "full_name" in the user's metadata for display in the UI.
 export const signUp = async (email, password, fullName) => {
     try {
         const { data, error } = await supabase.auth.signUp({
@@ -20,6 +23,12 @@ export const signUp = async (email, password, fullName) => {
         });
 
         if (error) throw error;
+
+        // Check if the user already exists (identities will be empty if account enumeration protection is on)
+        if (data?.user && data.user.identities && data.user.identities.length === 0) {
+            throw new Error('An account with this email already exists. Please log in instead.');
+        }
+
         return { data, error: null };
     } catch (error) {
         console.error('Sign up error:', error);
@@ -27,7 +36,8 @@ export const signUp = async (email, password, fullName) => {
     }
 };
 
-// Sign in existing user
+// SIGN IN: Authenticates with email and password.
+// If successful, Supabase returns a JWT token which is stored in LocalStorage.
 export const signIn = async (email, password) => {
     try {
         const { data, error } = await supabase.auth.signInWithPassword({
