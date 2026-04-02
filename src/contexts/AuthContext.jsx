@@ -2,6 +2,12 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { signIn, signUp, signOut, getCurrentUser, onAuthStateChange } from '../services/authService';
 import { supabase } from '../lib/supabase';
 
+/**
+ * 🔐 AUTH CONTEXT (Global Security Guard)
+ * This is a React Context that wraps the entire app.
+ * It provides the 'user' object and 'login/logout' functions to every page
+ * without needing to pass props manually (prop drilling).
+ */
 const AuthContext = createContext(null);
 
 export const useAuth = () => {
@@ -17,7 +23,10 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Initialize auth state and listen for changes
+    // 👁️ AUTH OBSERVER
+    // This hook runs once when the app starts.
+    // Logic: It checks if there's an existing login session in LocalStorage.
+    // It also sets up a Listener that triggers 'setUser' the moment a user signs in.
     useEffect(() => {
         const initializeAuth = async () => {
             try {
@@ -32,7 +41,7 @@ export const AuthProvider = ({ children }) => {
 
         initializeAuth();
 
-        // Listen for auth state changes
+        // 📡 Supabase Event Listener: Automatically updates UI on sign-in/out events.
         const { data: { subscription } } = onAuthStateChange((event, session) => {
             console.log('Auth state changed:', event);
             if (session?.user) {
