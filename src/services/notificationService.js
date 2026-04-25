@@ -120,9 +120,9 @@ export const deleteAllRead = async () => {
 };
 
 // Subscribe to new notifications
-export const subscribeToNotifications = (callback) => {
+export const subscribeToNotifications = (callback, channelName = 'notifications') => {
     const subscription = supabase
-        .channel('notifications')
+        .channel(channelName)
         .on(
             'postgres_changes',
             {
