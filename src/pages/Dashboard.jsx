@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, PawPrint, Settings, Bell, Plus, Wifi, Menu, Activity, ShieldCheck, Zap, Droplets, Wheat } from 'lucide-react';
+import { LogOut, PawPrint, Settings, Plus, Wifi, Menu, Activity, ShieldCheck, Zap, Droplets, Wheat } from 'lucide-react';
 import { getPetProfiles } from '../services/petProfileService';
 import { getUserDevices } from '../services/deviceService';
 import { queueFeedCommand } from '../services/commandService';
@@ -13,6 +13,7 @@ import FeederCard from '../components/FeederCard';
 import FeedNowModal from '../components/FeedNowModal';
 import FeedingHistory from '../components/FeedingHistory';
 import ManageFeederModal from '../components/ManageFeederModal';
+import NotificationBell from '../components/NotificationBell';
 import SensorGauges from '../components/SensorGauges';
 import Sidebar from '../components/Sidebar';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
@@ -151,9 +152,7 @@ const Dashboard = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="icon" className="h-9 w-9">
-                                <Bell className="h-4 w-4" />
-                            </Button>
+                            <NotificationBell />
                             <Button
                                 variant="default"
                                 size="sm"

@@ -1,24 +1,44 @@
-import { useState, useEffect } from 'react';
-import { Clock, CheckCircle2, XCircle, Loader2, Info, Zap } from 'lucide-react';
-import { getFeedingEvents } from '../services/feedingService';
+import { useState, useEffect, useRef } from 'react';
+import { Clock, CheckCircle2, XCircle, Loader2, Info, AlertTriangle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
 import { cn } from '@/lib/utils';
 import { supabase } from '../lib/supabase';
-import Button from './Button';
 
 const FeedingHistory = ({ feeders }) => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filter, setFilter] = useState('today');
+    const subscriptionRef = useRef(null);
 
     useEffect(() => {
         if (feeders && feeders.length > 0) {
             loadHistory();
+            setupRealtime();
         } else {
             setLoading(false);
         }
+        return () => {
+            subscriptionRef.current?.unsubscribe();
+        };
     }, [feeders, filter]);
+
+    const setupRealtime = () => {
+        subscriptionRef.current?.unsubscribe();
+        const deviceIds = feeders.map(f => f.id);
+        if (deviceIds.length === 0) return;
+
+        subscriptionRef.current = supabase
+            .channel('feeding-history-realtime')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'feeding_events',
+            }, () => {
+                loadHistory();
+            })
+            .subscribe();
+    };
 
     const loadHistory = async () => {
         setLoading(true);
@@ -32,78 +52,30 @@ const FeedingHistory = ({ feeders }) => {
                 startDate = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000)).toISOString();
             }
 
-            // Fetch from command_queue (more reliable - has actual status from ESP32)
+            const deviceIds = feeders.map(f => f.id);
+            if (deviceIds.length === 0) { setEvents([]); return; }
+
             let query = supabase
-                .from('command_queue')
-                .select('*')
-                .eq('command_type', 'FEED')
-                .order('created_at', { ascending: false })
+                .from('feeding_events')
+                .select('*, pet_profiles(id, name, photo_url)')
+                .in('device_id', deviceIds)
+                .order('timestamp', { ascending: false })
                 .limit(filter === 'all' ? 50 : 20);
 
-            if (startDate) {
-                query = query.gte('created_at', startDate);
-            }
+            if (startDate) query = query.gte('timestamp', startDate);
 
-            // Filter by device IDs
-            const deviceIds = feeders.map(f => f.id);
-            if (deviceIds.length > 0) {
-                query = query.in('device_id', deviceIds);
-            }
+            const { data, error } = await query;
+            if (error) throw error;
 
-            const { data: cmdData, error: cmdError } = await query;
-
-            if (cmdError) throw cmdError;
-
-            // Map command_queue to display format
-            const mapped = (cmdData || []).map(cmd => {
-                const feeder = feeders.find(f => f.id === cmd.device_id);
+            const mapped = (data || []).map(event => {
+                const feeder = feeders.find(f => f.id === event.device_id);
                 return {
-                    id: cmd.id,
-                    timestamp: cmd.created_at,
-                    actual_grams: cmd.payload?.grams || cmd.payload?.target_grams || 0,
-                    target_grams: cmd.payload?.target_grams || cmd.payload?.grams || 0,
-                    status: cmd.status === 'EXECUTED' ? 'SUCCESS' : cmd.status,
+                    ...event,
                     feederName: feeder?.device_name || feeder?.name || 'Feeder',
-                    pet_profiles: null,
                 };
             });
 
-            // Also try to get feeding_events for pet name info
-            const allEvents = [];
-            for (const feeder of feeders) {
-                const { data } = await getFeedingEvents(
-                    feeder.id,
-                    filter === 'all' ? 50 : 20,
-                    startDate,
-                    null
-                );
-                if (data) {
-                    allEvents.push(...data.map(event => ({
-                        ...event,
-                        feederName: feeder.device_name || feeder.name,
-                        // Use EXECUTED from command_queue if the feeding_event is still PENDING
-                        status: event.status === 'PENDING' ? 'PENDING' : event.status,
-                    })));
-                }
-            }
-
-            // Merge: prefer command_queue data (has real status), enrich with pet info from feeding_events
-            const enrichedMapped = mapped.map(cmd => {
-                const matchingEvent = allEvents.find(e =>
-                    e.device_id === feeders.find(f => f.device_name === cmd.feederName || f.name === cmd.feederName)?.id &&
-                    Math.abs(new Date(e.timestamp) - new Date(cmd.timestamp)) < 10000
-                );
-                return {
-                    ...cmd,
-                    pet_profiles: matchingEvent?.pet_profiles || null,
-                    status: cmd.status === 'SUCCESS' ? 'SUCCESS' : cmd.status,
-                };
-            });
-
-            // Use enriched command_queue data if available, fallback to feeding_events
-            const finalEvents = enrichedMapped.length > 0 ? enrichedMapped : allEvents;
-            finalEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            setEvents(finalEvents.slice(0, filter === 'all' ? 50 : 20));
+            setEvents(mapped);
         } catch (err) {
             console.error('Failed to load feeding history:', err);
             setError('Could not load activity');
@@ -169,12 +141,15 @@ const FeedingHistory = ({ feeders }) => {
                                     <div className={cn(
                                         "w-8 h-8 rounded-full flex items-center justify-center border",
                                         event.status === 'SUCCESS' ? "bg-success/10 border-success/20 text-success" :
-                                            event.status === 'PENDING' ? "bg-primary/10 border-primary/20 text-primary" :
-                                                "bg-destructive/10 border-destructive/20 text-destructive"
+                                        event.status === 'PENDING' ? "bg-primary/10 border-primary/20 text-primary" :
+                                        event.status === 'IN_PROGRESS' ? "bg-yellow-500/10 border-yellow-500/20 text-yellow-500" :
+                                        "bg-destructive/10 border-destructive/20 text-destructive"
                                     )}>
                                         {event.status === 'SUCCESS' ? <CheckCircle2 className="h-4 w-4" /> :
-                                            event.status === 'PENDING' ? <Loader2 className="h-4 w-4 animate-spin" /> :
-                                                <XCircle className="h-4 w-4" />}
+                                         event.status === 'PENDING' ? <Loader2 className="h-4 w-4 animate-spin" /> :
+                                         event.status === 'IN_PROGRESS' ? <Loader2 className="h-4 w-4 animate-spin" /> :
+                                         event.status === 'FAILED' ? <XCircle className="h-4 w-4" /> :
+                                         <AlertTriangle className="h-4 w-4" />}
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-foreground leading-none">
@@ -193,10 +168,11 @@ const FeedingHistory = ({ feeders }) => {
                                     <p className={cn(
                                         "text-[9px] font-black uppercase tracking-widest mt-1",
                                         event.status === 'SUCCESS' ? "text-success" :
-                                            event.status === 'PENDING' ? "text-primary" :
-                                                "text-destructive"
+                                        event.status === 'PENDING' ? "text-primary" :
+                                        event.status === 'IN_PROGRESS' ? "text-yellow-500" :
+                                        "text-destructive"
                                     )}>
-                                        {event.status}
+                                        {event.status === 'IN_PROGRESS' ? 'In Progress' : event.status}
                                     </p>
                                 </div>
                             </div>
