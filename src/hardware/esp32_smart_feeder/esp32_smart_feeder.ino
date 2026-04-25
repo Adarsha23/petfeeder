@@ -4,118 +4,84 @@
 #include <ESP32Servo.h>
 #include "HX711.h"
 
-// --- 📡 NETWORK SETTINGS ---
+// --- NETWORK ---
 const char* ssid = "Nothing2a"; 
 const char* password = "123456789";
 
-// --- ☁️ SUPABASE SETTINGS ---
+// --- SUPABASE CONFIG ---
 const char* supabaseBase = "https://tjzcpepvnebwcoqobrlt.supabase.co/rest/v1"; 
 const char* supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqemNwZXB2bmVid2NvcW9icmx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3Njc4NzcsImV4cCI6MjA4MDM0Mzg3N30._mE8OHybd071Viw24xvUP7TNTWX1UmgkZkHN3LAvZng";
-
-// --- ⚙️ DEVICE IDENTITY ---
 const char* myDeviceId = "bd62346a-3e65-4f8d-b7ed-cf81467d228b"; 
 
-// --- 🔌 PIN DEFINITIONS ---
-const int SERVO_PIN = 18;       // Motor Signal
-const int FOOD_TRIG = 19;       // Food Ultrasonic (Trig)
-const int FOOD_ECHO = 12;       // Food Ultrasonic (Echo)
-const int WATER_TRIG = 21;      // Water Ultrasonic (Trig)
-const int WATER_ECHO = 13;      // Water Ultrasonic (Echo)
-const int LOADCELL_DT = 4;      // Scale Data
-const int LOADCELL_SCK = 5;     // Scale Clock
+// --- PINS ---
+const int SERVO_PIN = 18;       
+const int PUMP_PIN = 23;        
+const int LOADCELL_DT = 4;      
+const int LOADCELL_SCK = 19;     
+const int WATER_TRIG = 21;
+const int WATER_ECHO = 13;
+const int FOOD_TRIG = 14;   
+const int FOOD_ECHO = 27;   
 
-// --- GLOBAL OBJECTS ---
+const float calibrationFactor = 414.0; 
+
 Servo feederServo;
 HX711 scale;
 unsigned long lastSensorReport = 0;
 
-// --- FUNCTION PROTOTYPES (To prevent scope errors) ---
-void updateStatus(const char* id, const char* s, float actualGrams);
-void executeFeeding(const char* id, int grams);
-void executeWater(const char* id, int ms);
-void postToCloud(const char* type, float val);
-void reportHeartbeat();
-
-void setup() {
-  Serial.begin(115200);
-  
-  // Initialize Ultrasonic Pins
-  pinMode(FOOD_TRIG, OUTPUT);
-  pinMode(FOOD_ECHO, INPUT);
-  pinMode(WATER_TRIG, OUTPUT);
-  pinMode(WATER_ECHO, INPUT);
-  
-  // Initialize Servo
-  feederServo.attach(SERVO_PIN);
-  feederServo.write(90); // CENTER / NEUTRAL POSITION 
-
-  // Initialize Scale
-  scale.begin(LOADCELL_DT, LOADCELL_SCK);
-  scale.set_scale(420.0); // Calibration Factor
-  scale.tare();
-
-  // Connect to WiFi
-  Serial.print("--- SYSTEM STARTING ---\nConnecting WiFi: ");
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\n✅ Online! Running system checks...");
-}
-
-void loop() {
-  if (WiFi.status() == WL_CONNECTED) {
-    // 1. Check for commands from website
-    checkCloudCommands();
-    
-    // 2. Report Sensors to Cloud (every 60s)
-    if (millis() - lastSensorReport > 60000) {
-      reportSensors();
-      reportHeartbeat(); // Updates last_seen_at in DB
-      lastSensorReport = millis();
-    }
-  } else {
-    Serial.println("WiFi Link Down. Retrying...");
-    WiFi.begin(ssid, password);
-  }
-  delay(3000); 
-}
-
-// --- ULTRASONIC LOGIC ---
+// ULTRASONIC SENSOR LOGIC
+// We use these to measure the depth of food in the hopper and water in the tank.
+// Logic: Time taken for sound wave to bounce back = 2x distance.
 float getDistance(int trig, int echo) {
+  pinMode(trig, OUTPUT);
+  pinMode(echo, INPUT);
   digitalWrite(trig, LOW);
   delayMicroseconds(2);
   digitalWrite(trig, HIGH);
   delayMicroseconds(10);
   digitalWrite(trig, LOW);
-  long duration = pulseIn(echo, HIGH, 30000);
-  return (duration * 0.034) / 2;
+  long duration = pulseIn(echo, HIGH, 30000); // 30ms timeout to avoid "freezes"
+  if (duration == 0) return 0;
+  return (duration * 0.034) / 2; // Speed of sound is ~0.034 cm/us
 }
 
-void reportSensors() {
-  // 1. Measure Everything
-  float fDist = getDistance(FOOD_TRIG, FOOD_ECHO);
-  float wDist = getDistance(WATER_TRIG, WATER_ECHO);
-  float weight = scale.get_units(5);
+// Prototypes
+void updateStatus(const char* id, const char* s);
+void logFeedingEvent(float grams);
+void reportSensors();
 
-  // 2. Calculate Percentages (assuming 20cm deep containers)
-  int fPct = map(constrain(fDist, 3, 20), 3, 20, 100, 0);
-  int wPct = map(constrain(wDist, 3, 20), 3, 20, 100, 0);
+void setup() {
+  Serial.begin(115200);
+  pinMode(PUMP_PIN, OUTPUT);
+  digitalWrite(PUMP_PIN, HIGH);
 
-  // 3. 🖥️ PRINT TO SERIAL MONITOR
-  Serial.println("\n--- 📊 SENSOR REPORT ---");
-  Serial.print("🍗 Food: "); Serial.print(fPct); Serial.println("%");
-  Serial.print("💧 Water: "); Serial.print(wPct); Serial.println("%");
-  Serial.print("⚖️ Weight on Tray: "); Serial.print(weight); Serial.println("g");
-  Serial.println("-----------------------");
+  feederServo.attach(SERVO_PIN);
+  feederServo.write(90); // Hatch Closed
 
-  // 4. Send to Cloud (Database)
-  postToCloud("FOOD_LEVEL", fPct);
-  postToCloud("WATER_LEVEL", wPct);
-  postToCloud("TRAY_WEIGHT", weight);
+  scale.begin(LOADCELL_DT, LOADCELL_SCK);
+  scale.set_scale(calibrationFactor);
+  
+  Serial.println("\nSMART FEEDER - READY");
+  delay(1000);
+  scale.tare(); 
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
+  Serial.println("\nSTATUS: ONLINE");
 }
 
+void loop() {
+  if (WiFi.status() == WL_CONNECTED) {
+    checkCloudCommands();
+    if (lastSensorReport == 0 || millis() - lastSensorReport > 60000) {
+      reportSensors();
+      lastSensorReport = millis();
+    }
+  }
+}
+
+// POLLING LOGIC
+// The ESP32 asks: "Hey Supabase, is there anyone in the command_queue with status=PENDING?"
 void checkCloudCommands() {
   HTTPClient http;
   String url = String(supabaseBase) + "/command_queue?status=eq.PENDING&select=*";
@@ -123,119 +89,133 @@ void checkCloudCommands() {
   http.addHeader("apikey", supabaseKey);
   http.addHeader("Authorization", String("Bearer ") + supabaseKey);
 
-  if (http.GET() == 200) {
-    String payload = http.getString();
+  int httpCode = http.GET();
+  if (httpCode == 200) {
     DynamicJsonDocument doc(2048);
-    deserializeJson(doc, payload);
+    deserializeJson(doc, http.getString());
     JsonArray arr = doc.as<JsonArray>();
 
     for (JsonObject cmd : arr) {
        const char* cmdId = cmd["id"];
        const char* type = cmd["command_type"];
        
+       // Handle different mission types
        if (String(type) == "FEED") {
-         int g = cmd["payload"]["grams"]; if(g<=0) g=50;
-         Serial.println("🚀 DISPENSING FOOD...");
-         executeFeeding(cmdId, g);
+         executeFeeding(cmdId, cmd["payload"]["grams"] | 50);
        } else if (String(type) == "WATER_FEED") {
-         int ms = cmd["payload"]["duration"]; if(ms<=0) ms=3000;
-         Serial.println("🌊 DISPENSING WATER...");
-         executeWater(cmdId, ms);
+         executeWater(cmdId, cmd["payload"]["duration"] | 3000);
        } else if (String(type) == "CALIBRATE") {
-         Serial.println("⚖️ TARE COMMAND RECEIVED!");
-         scale.tare();
-         updateStatus(cmdId, "EXECUTED", 0);
+         scale.tare(); // Zero out the scale
+         updateStatus(cmdId, "EXECUTED");
        }
     }
   }
   http.end();
 }
 
+// CLOSED-LOOP FEEDING MECHANISM
+// This is the most complex physical logic in the project.
+// It opens the hatch AND monitors the Load Cell (scale) until the weight reaches target.
 void executeFeeding(const char* id, int targetGrams) {
-  Serial.print("⚖️ Target: "); Serial.print(targetGrams); Serial.println("g. Taring Scale...");
-  scale.tare();
-  delay(300);
+  Serial.println("FEEDING STARTING...");
+  
+  // Record weight of the bowl right now (so we don't accidentally count the bowl itself as food)
+  float startingWeight = abs(scale.get_units(5)); 
+  Serial.print("Initial Bowl Weight: "); Serial.print(startingWeight); Serial.println("g");
 
-  // 1. Rotate to Food Hatch (Counter-Clockwise)
-  Serial.println("📂 Food Hatch Opening...");
-  for (int pos = 90; pos >= 20; pos--) { feederServo.write(pos); delay(8); }
+  // Open the Hatch (Servo 90 -> 10 deg)
+  for (int pos = 90; pos >= 10; pos--) { feederServo.write(pos); delay(15); }
+  
+  unsigned long startTime = millis();
+  float currentTotal = 0;
+  float addedWeight = 0; 
+  bool success = false;
+  
+  // Keep feeding until target is hit or 60 seconds (safety timeout) pass
+  while (millis() - startTime < 60000) {
+    currentTotal = abs(scale.get_units(3)); 
+    addedWeight = currentTotal - startingWeight; // Calculate ONLY the new food
+    
+    Serial.print("Total: "); Serial.print(currentTotal); 
+    Serial.print("g (Delta: "); Serial.print(addedWeight); Serial.println("g)");
 
-  // 2. Closed-Loop Monitoring
-  unsigned long startFeed = millis();
-  float currentWeight = 0;
-  while (currentWeight < targetGrams) {
-    currentWeight = scale.get_units(3);
-    if (millis() - startFeed > 15000) break; // 15s Timeout
-    delay(50); 
+    if (addedWeight >= (float)targetGrams) { success = true; break; }
+    delay(100); // Sample rate
   }
 
-  // 3. Return to Neutral
-  Serial.println("🔒 Closing Hatch...");
-  for (int pos = 20; pos <= 90; pos++) { feederServo.write(pos); delay(8); }
-
-  float finalGrams = scale.get_units(10);
-  updateStatus(id, "EXECUTED", finalGrams);
-  Serial.print("✅ Food Complete: "); Serial.print(finalGrams); Serial.println("g");
+  // Close the Hatch (Servo 10 -> 90 deg)
+  for (int pos = 10; pos <= 90; pos++) { feederServo.write(pos); delay(15); }
+  
+  // Update Backend: This closes the loop for the user's mobile app
+  updateStatus(id, success ? "EXECUTED" : "FAILED");
+  if (success) logFeedingEvent(addedWeight);
 }
 
 void executeWater(const char* id, int durationMs) {
-  // 1. Rotate to Water Hatch (Clockwise)
-  Serial.println("🌊 Water Hatch Opening...");
-  for (int pos = 90; pos <= 160; pos++) { feederServo.write(pos); delay(8); }
-
-  // 2. Wait for duration
+  digitalWrite(PUMP_PIN, LOW);
   delay(durationMs);
-
-  // 3. Return to Neutral
-  Serial.println("🔒 Closing Hatch...");
-  for (int pos = 160; pos >= 90; pos--) { feederServo.write(pos); delay(8); }
-
-  updateStatus(id, "EXECUTED", 1.0); 
-  Serial.println("✅ Water Complete.");
+  digitalWrite(PUMP_PIN, HIGH);
+  updateStatus(id, "EXECUTED");
 }
 
-void postToCloud(const char* type, float val) {
-  HTTPClient http;
-  http.begin(String(supabaseBase) + "/device_sensors");
-  http.addHeader("apikey", supabaseKey);
-  http.addHeader("Authorization", String("Bearer ") + supabaseKey);
-  http.addHeader("Content-Type", "application/json");
-
-  String json = "{\"device_id\":\"" + String(myDeviceId) + "\", \"sensor_type\":\"" + String(type) + "\", \"value\":" + String(val) + ", \"unit\":\"%\"}";
-  int code = http.POST(json);
-  
-  if (code != 201) {
-    Serial.print("POST "); Serial.print(type); Serial.print(" FAILED: "); Serial.println(code);
-  }
-  http.end();
-}
-
-void updateStatus(const char* id, const char* s, float actualGrams) {
+void updateStatus(const char* id, const char* s) {
   HTTPClient http;
   String url = String(supabaseBase) + "/command_queue?id=eq." + id;
   http.begin(url);
   http.addHeader("apikey", supabaseKey);
   http.addHeader("Authorization", String("Bearer ") + supabaseKey);
   http.addHeader("Content-Type", "application/json");
-
-  String json = "{\"status\":\"" + String(s) + "\", \"actual_grams\":" + String(actualGrams) + "}";
-  int code = http.PATCH(json);
-  Serial.print("Update Command Status: "); Serial.println(code);
+  String body = "{\"status\":\"" + String(s) + "\"}";
+  http.PATCH(body);
   http.end();
 }
 
-void reportHeartbeat() {
+void logFeedingEvent(float grams) {
   HTTPClient http;
-  String url = String(supabaseBase) + "/devices?id=eq." + String(myDeviceId);
-  http.begin(url);
+  http.begin(String(supabaseBase) + "/feeding_events");
   http.addHeader("apikey", supabaseKey);
   http.addHeader("Authorization", String("Bearer ") + supabaseKey);
   http.addHeader("Content-Type", "application/json");
-  http.addHeader("Prefer", "return=minimal");
+  String body = "{\"device_id\":\"" + String(myDeviceId) + "\", \"amount_grams\":" + String(grams) + "}";
+  http.POST(body);
+  http.end();
+}
+
+void reportSensors() {
+  float waterDist = getDistance(WATER_TRIG, WATER_ECHO);
+  float foodDist = getDistance(FOOD_TRIG, FOOD_ECHO);
+  float weight = abs(scale.get_units(5));
+
+  int waterPct = map(constrain(waterDist, 2, 20), 2, 20, 100, 0);
+  int foodPct = map(constrain(foodDist, 2, 20), 2, 20, 100, 0);
+
+  // Send Telemetry
+  Serial.println("\n--- SENDING TELEMETRY ---");
+  Serial.print("Tray: "); Serial.print(weight); Serial.println("g");
+  Serial.print("Water: "); Serial.print(waterPct); Serial.println("%");
+  Serial.print("Food: "); Serial.print(foodPct); Serial.println("%");
+
+  sendSensor("TRAY_WEIGHT", weight, "g");
+  sendSensor("WATER_LEVEL", (float)waterPct, "%");
+  sendSensor("FOOD_LEVEL", (float)foodPct, "%");
+  Serial.println("STATUS REPORTED TO CLOUD");
+}
+
+void sendSensor(const char* type, float val, const char* unit) {
+  HTTPClient http;
+  http.begin(String(supabaseBase) + "/device_sensors");
+  http.addHeader("apikey", supabaseKey);
+  http.addHeader("Authorization", String("Bearer ") + supabaseKey);
+  http.addHeader("Content-Type", "application/json");
   
-  int code = http.PATCH("{\"status\":\"ONLINE\", \"last_seen_at\":\"now()\"}");
-  if (code < 0) {
-    Serial.print("Heartbeat Failed: "); Serial.println(http.errorToString(code).c_str());
-  }
+  StaticJsonDocument<256> doc;
+  doc["device_id"] = myDeviceId;
+  doc["sensor_type"] = type;
+  doc["value"] = val;
+  doc["unit"] = unit; 
+  
+  String body;
+  serializeJson(doc, body);
+  http.POST(body);
   http.end();
 }

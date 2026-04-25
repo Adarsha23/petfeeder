@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Wifi, WifiOff, Settings, QrCode, PawPrint, Wheat, Droplets, Fingerprint, Scale } from 'lucide-react';
-import { supabase } from '../lib/supabase'; // Fixed missing import
+import { supabase } from '../lib/supabase';
 import { getDeviceSensorData } from '../services/deviceService';
-import { queueCalibrateCommand } from '../services/commandService';
+import { queueCalibrateCommand, queueWaterCommand } from '../services/commandService';
 import Button from './Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/card';
 import { cn } from '@/lib/utils';
@@ -57,17 +57,8 @@ const FeederCard = ({ feeder, onManage, onFeedNow }) => {
     const handleWater = async () => {
         setDispensing(true);
         try {
-            const { data, error } = await supabase
-                .from('command_queue')
-                .insert([{
-                    device_id: feeder.id,
-                    user_id: (await supabase.auth.getUser()).data.user.id,
-                    command_type: 'WATER_FEED',
-                    payload: { duration: 3000 },
-                    status: 'PENDING',
-                    priority: 1
-                }]);
-            if (error) throw error;
+            const { error } = await queueWaterCommand(feeder.id);
+            if (error) throw new Error(error);
             alert('Water dispensing command queued.');
         } catch (e) {
             alert('Failed to queue water: ' + e.message);
