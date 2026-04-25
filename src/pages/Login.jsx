@@ -25,6 +25,10 @@ const Login = () => {
             setSuccessMessage('Email verified successfully! Please log in.');
             window.history.replaceState({}, '', '/login');
         }
+        if (searchParams.get('reset') === 'true') {
+            setSuccessMessage('Password updated successfully! Please log in with your new password.');
+            window.history.replaceState({}, '', '/login');
+        }
     }, [searchParams]);
 
     const validateForm = () => {
