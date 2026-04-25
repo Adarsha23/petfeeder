@@ -115,6 +115,40 @@ export const queueResumeCommand = async (deviceId) => {
     }
 };
 
+// Queue a water command
+export const queueWaterCommand = async (deviceId, durationMs = 3000) => {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        const idempotencyToken = generateIdempotencyToken();
+
+        const { data, error } = await supabase
+            .from('command_queue')
+            .insert([
+                {
+                    device_id: deviceId,
+                    user_id: user.id,
+                    command_type: 'WATER_FEED',
+                    payload: {
+                        duration: durationMs,
+                    },
+                    status: 'PENDING',
+                    idempotency_token: idempotencyToken,
+                    priority: 1, // Higher priority than food
+                },
+            ])
+            .select()
+            .single();
+
+        if (error) throw error;
+        return { data, error: null };
+    } catch (error) {
+        console.error('Queue water command error:', error);
+        return { data: null, error: error.message };
+    }
+};
+
 // Queue a calibrate (tare) command
 export const queueCalibrateCommand = async (deviceId) => {
     try {

@@ -81,6 +81,7 @@ export const createPetProfile = async (petData) => {
                     dietary_notes: JSON.stringify(petData.dietaryRequirements || {}),
                 },
             ])
+            // ask the data from the database immediately
             .select()
             .single();
 

@@ -2,8 +2,8 @@ import { supabase } from '../lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * 📡 DEVICE SERVICE
- * Manages the "Digital Twin" of your hardware. 
+ * DEVICE SERVICE
+ * Manages the "Digital Twin" of the hardware. 
  * This service handles registration (pairing), metadata (names),
  * and live sensor retrieval (food/water levels).
  */
@@ -54,15 +54,13 @@ export const getDeviceById = async (deviceId) => {
     }
 };
 
-// 🔗 PAIRING LOGIC (Register a new Feeder)
-// To keep things secure, we don't just send the raw pairing code to the DB.
-// We hash it first (SHA-256) so only the device and the user know the secret.
+// PAIRING LOGIC (Register a new Feeder)
 export const registerDevice = async (serialNumber, pairingCode, deviceName = null, petId = null) => {
     try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        // 🛡️ SECURITY: Pairing Code Hash
+        // SECURITY: Pairing Code Hash
         const pairingCodeHash = await hashPairingCode(pairingCode);
 
         let { data, error } = await supabase
@@ -163,7 +161,7 @@ export const deleteDevice = async (deviceId) => {
     }
 };
 
-// 📶 REALTIME HEARTBEAT
+// REALTIME HEARTBEAT
 // Subscribes to the 'devices' table for a specific ID.
 // Whenever 'last_seen_at' or 'status' changes in the DB (via hardware trigger), 
 // our React dashboard updates instantly.
@@ -212,7 +210,6 @@ export const getDeviceSensorData = async (deviceId, sensorType = null, limit = 1
 };
 
 // Helper function to hash pairing code (simple implementation)
-// In production, use bcrypt or similar on the server side
 const hashPairingCode = async (pairingCode) => {
     const encoder = new TextEncoder();
     const data = encoder.encode(pairingCode);

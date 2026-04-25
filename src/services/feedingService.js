@@ -205,7 +205,7 @@ export const getFeedingAccuracyMetrics = async (deviceId, limit = 100) => {
     }
 };
 
-// Get all feeding history for the user (across all devices)
+// Get all feeding history for the user
 export const getFeedingHistory = async (limit = 100) => {
     try {
         const { data, error } = await supabase

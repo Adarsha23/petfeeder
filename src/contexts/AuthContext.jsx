@@ -3,7 +3,7 @@ import { signIn, signUp, signOut, getCurrentUser, onAuthStateChange } from '../s
 import { supabase } from '../lib/supabase';
 
 /**
- * 🔐 AUTH CONTEXT (Global Security Guard)
+ * AUTH CONTEXT (Global Security Guard)
  * This is a React Context that wraps the entire app.
  * It provides the 'user' object and 'login/logout' functions to every page
  * without needing to pass props manually (prop drilling).
@@ -23,7 +23,7 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // 👁️ AUTH OBSERVER
+    // AUTH OBSERVER
     // This hook runs once when the app starts.
     // Logic: It checks if there's an existing login session in LocalStorage.
     // It also sets up a Listener that triggers 'setUser' the moment a user signs in.
