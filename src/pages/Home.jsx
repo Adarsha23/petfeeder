@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import { PawPrint, Scale, Wifi, Users, Bell, Clock, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
-import Button from '../components/Button';
-import { Card, CardContent } from '../components/ui/card';
-import { cn } from '@/lib/utils';
+import Button from '../shared/components/Button';
+import { Card, CardContent } from '../shared/components/ui/card';
+import { cn } from '../shared/lib/utils';
 
 const Home = () => {
     return (

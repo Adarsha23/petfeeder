@@ -2,18 +2,23 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './index.css'
-import { AuthProvider } from './contexts/AuthContext'
-import ProtectedRoute from './components/ProtectedRoute'
+
+// Auth feature
+import { AuthProvider } from './features/auth/AuthContext'
+import ProtectedRoute from './features/auth/ProtectedRoute'
+import Login from './features/auth/Login'
+import Signup from './features/auth/Signup'
+import VerifyEmail from './features/auth/VerifyEmail'
+import ForgotPassword from './features/auth/ForgotPassword'
+import ResetPassword from './features/auth/ResetPassword'
+
+// Feature pages
 import Home from './pages/Home'
-import Login from './pages/Login'
-import Signup from './pages/Signup'
-import VerifyEmail from './pages/VerifyEmail'
-import ForgotPassword from './pages/ForgotPassword'
-import ResetPassword from './pages/ResetPassword'
-import Dashboard from './pages/Dashboard'
-import Schedules from './pages/Schedules'
-import Analytics from './pages/Analytics'
-import Settings from './pages/Settings'
+
+import Dashboard from './features/dashboard/Dashboard'
+import Schedules from './features/schedules/Schedules'
+import Analytics from './features/analytics/Analytics'
+import Settings from './features/settings/Settings'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
